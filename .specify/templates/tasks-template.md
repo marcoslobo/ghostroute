@@ -51,6 +51,8 @@ description: "Task list template for feature implementation"
 - [ ] T001 Create project structure per implementation plan
 - [ ] T002 Initialize [language] project with [framework] dependencies
 - [ ] T003 [P] Configure linting and formatting tools
+- [ ] T004 [P] Setup Foundry testing framework for security-critical components
+- [ ] T005 [P] Initialize Noir circuit development environment
 
 ---
 
@@ -62,12 +64,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T010 Setup Merkle Tree structure and zero-knowledge circuit framework
+- [ ] T011 [P] Implement Hook architecture for Uniswap v4 integration
+- [ ] T012 [P] Setup atomic transaction execution framework
+- [ ] T013 Create base ZK-proof verification components that all stories depend on
+- [ ] T014 Configure secure error handling that preserves privacy guarantees
+- [ ] T015 Setup client-side proof generation environment
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -79,12 +81,14 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (REQUIRED for privacy/security features) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T020 [P] [US1] Foundry test for [Hook logic] in tests/foundry/test_[name].t.sol
+- [ ] T021 [P] [US1] Noir circuit test for [ZK proof generation] in circuits/test/[name].nr
+- [ ] T022 [P] [US1] Integration test for [privacy preservation] in tests/integration/test_[name].py
+- [ ] T023 [P] [US1] Atomic execution test for [transaction failure scenarios] in tests/foundry/test_atomic_[name].t.sol
 
 ### Implementation for User Story 1
 
@@ -154,7 +158,9 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
+- [ ] TXXX [P] Formal verification preparation for ZK circuits
+- [ ] TXXX [P] Security audit preparation and threat model documentation
+- [ ] TXXX [P] Circuit constraint optimization for mobile/browser performance
 - [ ] TXXX Run quickstart.md validation
 
 ---

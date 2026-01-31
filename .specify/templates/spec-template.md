@@ -69,11 +69,14 @@
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
+  Fill them out with the right edge cases with focus on privacy and security scenarios.
 -->
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+- What happens when [ZK proof verification fails]?
+- How does system handle [Merkle tree corruption or reorg attacks]?
+- Privacy impact of [transaction failure during atomic execution]?
+- How are [user funds protected] when [hook execution fails]?
+- What are the [linkability risks] for [failed or partial transactions]?
 
 ## Requirements *(mandatory)*
 
@@ -89,6 +92,9 @@
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-006**: System MUST preserve privacy by [specific privacy requirement, e.g., "generating ZK proofs client-side"]
+- **FR-007**: System MUST ensure atomic execution of [specific transaction type]
+- **FR-008**: System MUST prevent on-chain linkability between [specific actions]
 
 *Example of marking unclear requirements:*
 

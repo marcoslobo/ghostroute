@@ -31,7 +31,12 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Privacy by Default**: Implementation MUST NOT expose user private keys or create on-chain linkability
+- **Hook Architecture**: Design MUST be modular and support future protocol adapters without breaking existing privacy guarantees  
+- **Economic Integrity**: All transactions MUST be atomic with proper UTXO handling and fail-safe mechanisms
+- **Security Testing**: 100% branch coverage REQUIRED for all Hook logic and Merkle Tree transitions
+- **Circuit Design**: Noir implementations MUST be optimized for mobile/web browser proof generation
+- **Formal Verification**: Code structure MUST support future formal verification of ZK-Verifier and Vault logic
 
 ## Project Structure
 

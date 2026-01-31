@@ -1,50 +1,50 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: 1.0.0
+Modified principles: All principles replaced with DeFi privacy protocol principles
+Added sections: Engineering Principles, Economic Integrity, Interoperability & Modularity  
+Removed sections: Generic template placeholders
+Templates requiring updates: ⚠ pending (plan-template.md, spec-template.md, tasks-template.md need constitution alignment)
+Follow-up TODOs: None - all placeholders filled
+-->
+
+# AnonLP Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Privacy by Default (Zero-Knowledge)
+The protocol shall never have access to user's private keys or uncommitted secrets. No on-chain link shall exist between the funding source (Deposit) and the liquidity position (Action) without a valid Zero-Knowledge Proof. Cryptographic proofs must be generated on the user's device to ensure data sovereignty.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Interoperability & Modularity (The Hook Architecture)
+While initially built for Uniswap v4, the architecture must remain modular via "Action Adapters" to support future protocols (Aave, Morpho, etc.). Hooks must only serve as executors and verifiers; they shall not introduce centralized bottlenecks or backdoors.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Economic Integrity (UTXO Model)
+All privacy-to-DeFi interactions must be atomic. If the DeFi leg fails, the ZK-Note must remain unspent. The protocol shall support a diverse range of assets (ETH/ERC20) within a unified Merkle Tree structure to maximize the anonymity set.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+## Engineering Principles
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### Security-First Testing
+100% branch coverage is required for all Hook logic and Merkle Tree transitions. All critical components must undergo Foundry-based testing with comprehensive edge case coverage.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### Minimalist Circuit Design
+Noir circuits must be optimized for constraints to ensure fast proof generation in mobile and web browsers. Circuit complexity must be justified with performance benchmarks.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### Formal Verification Ready
+Code must be written with clarity to facilitate future formal verification of the ZK-Verifier and Vault logic. All cryptographic implementations must be auditable and mathematically verifiable.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Governance & Evolution
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Immutable Core
+The ZK-Verifier and Merkle Tree logic should move towards immutability to ensure permanent privacy guarantees. Core cryptographic primitives shall be treated as protocol constants.
+
+### Community Adapters
+The community may propose new "Action Adapters," but each must undergo a rigorous security audit before being whitelisted by the Vault. All adapter proposals must include threat models and formal verification plans.
+
+### Amendment Process
+Constitutional amendments require supermajority governance approval, security audit completion, and backward compatibility analysis. All changes must preserve existing privacy guarantees and user funds.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other project practices and technical decisions. All implementations, code reviews, and protocol changes must verify explicit compliance with these principles. Security violations must be justified with threat model analysis and approved by governance before implementation. Use project-specific guidance documents for runtime development decisions while maintaining constitutional adherence.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-01-30 | **Last Amended**: 2026-01-30
