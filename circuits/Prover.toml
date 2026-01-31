@@ -1,0 +1,19 @@
+action_hash = ""
+change_commitment = ""
+index = ""
+invest_amount = ""
+nullifier_hash = ""
+path = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+root = ""
+
+[change_note]
+amount = ""
+asset_id = ""
+blinding = ""
+nullifier_secret = ""
+
+[note]
+amount = ""
+asset_id = ""
+blinding = ""
+nullifier_secret = ""

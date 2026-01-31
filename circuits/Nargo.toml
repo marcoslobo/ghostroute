@@ -1,6 +1,7 @@
 [package]
-name = "circuits"
+name = "anonex_privacy_circuit"
 type = "bin"
-authors = [""]
+authors = ["AnonLP Team"]
+compiler_version = ">=0.32.0"
 
 [dependencies]
