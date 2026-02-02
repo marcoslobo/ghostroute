@@ -1,0 +1,35 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: rest
+    url: http://supabase-rest:80
+    routes:
+      - name: rest-route
+        paths:
+          - /rest/v1
+        strip_path: false
+
+  - name: auth
+    url: http://supabase-gotrue:9999
+    routes:
+      - name: auth-route
+        paths:
+          - /auth/v1
+        strip_path: false
+
+  - name: functions
+    url: http://supabase-functions:9000
+    routes:
+      - name: functions-route
+        paths:
+          - /functions/v1
+        strip_path: false
+
+  - name: storage
+    url: http://supabase-storage:9000
+    routes:
+      - name: storage-route
+        paths:
+          - /storage/v1
+        strip_path: false

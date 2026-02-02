@@ -1,0 +1,409 @@
+openapi: 3.1.0
+info:
+  title: ZK Indexer API
+  description: Off-chain webhook consumer for processing ZK-related events and serving Merkle proofs
+  version: 1.0.0
+  contact:
+    name: AnonLP Team
+    url: https://anonlp.io
+
+servers:
+  - url: https://{project}.supabase.co/functions/v1
+    description: Supabase Edge Functions
+  - url: http://localhost:54321/functions/v1
+    description: Local Supabase development
+
+tags:
+  - name: Webhook
+    description: Webhook endpoints for EVM listener
+  - name: Merkle
+    description: Merkle tree operations and proof generation
+  - name: Health
+    description: Service health and monitoring
+
+paths:
+  /webhook:
+    post:
+      tags:
+        - Webhook
+      summary: Receive webhook events from EVM listener
+      description: |
+        Supabase Edge Function: Ingests NewCommitment and NullifierSpent events with idempotency guarantees.
+        Events are processed asynchronously; check Merkle endpoints for updates.
+      operationId: receiveWebhook
+      security:
+        - webhookSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/NewCommitmentPayload'
+                - $ref: '#/components/schemas/NullifierSpentPayload'
+              discriminator:
+                propertyName: eventType
+      responses:
+        '200':
+          description: Event received and queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAcknowledgment'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Duplicate event (idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAcknowledgment'
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /merkle-root:
+    get:
+      tags:
+        - Merkle
+      summary: Get current Merkle root for a vault
+      description: "Supabase Edge Function: Returns the current Merkle root hash for the specified vault"
+      operationId: getMerkleRoot
+      parameters:
+        - name: vaultId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Vault identifier
+        - name: chainId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: EVM chain ID
+      responses:
+        '200':
+          description: Current Merkle root
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerkleRootResponse'
+        '404':
+          description: Vault not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /merkle-path:
+    get:
+      tags:
+        - Merkle
+      summary: Get Merkle path (witness) for a leaf
+      description: |
+        Supabase Edge Function: Returns the Merkle path (20 hashes) required for ZK proof generation.
+        The path is computed from the leaf at the specified index to the current root.
+      operationId: getMerklePath
+      parameters:
+        - name: vaultId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Vault identifier
+        - name: chainId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: EVM chain ID
+        - name: leafIndex
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1048575
+          description: Leaf index in the Merkle tree (0 to 2^20 - 1)
+      responses:
+        '200':
+          description: Merkle path for proof generation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerklePathResponse'
+        '400':
+          description: Invalid leaf index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Vault or leaf not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: "Supabase Edge Function: Returns service health status"
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+
+components:
+  securitySchemes:
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: HMAC-SHA256 signature of the request body
+
+  schemas:
+    NewCommitmentPayload:
+      type: object
+      required:
+        - eventType
+        - eventId
+        - chainId
+        - vaultAddress
+        - commitment
+        - block
+        - transactionHash
+      properties:
+        eventType:
+          type: string
+          const: 'NewCommitment'
+        eventId:
+          type: string
+          description: Unique event identifier for idempotency
+        chainId:
+          type: integer
+          description: EVM chain ID
+        vaultAddress:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: Vault contract address
+        commitment:
+          type: object
+          required:
+            - hash
+            - index
+            - value
+          properties:
+            hash:
+              type: string
+              pattern: '^0x[a-fA-F0-9]{64}$'
+              description: Poseidon hash of the commitment
+            index:
+              type: integer
+              description: Leaf index in Merkle tree
+            value:
+              type: string
+              description: Commitment value as decimal string
+            metadata:
+              type: string
+              description: Optional metadata
+        block:
+          type: object
+          required:
+            - number
+            - hash
+            - timestamp
+          properties:
+            number:
+              type: integer
+            hash:
+              type: string
+              pattern: '^0x[a-fA-F0-9]{64}$'
+            timestamp:
+              type: integer
+        transactionHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+
+    NullifierSpentPayload:
+      type: object
+      required:
+        - eventType
+        - eventId
+        - chainId
+        - vaultAddress
+        - nullifier
+        - block
+        - transactionHash
+      properties:
+        eventType:
+          type: string
+          const: 'NullifierSpent'
+        eventId:
+          type: string
+          description: Unique event identifier for idempotency
+        chainId:
+          type: integer
+          description: EVM chain ID
+        vaultAddress:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: Vault contract address
+        nullifier:
+          type: object
+          required:
+            - hash
+            - commitmentIndex
+          properties:
+            hash:
+              type: string
+              pattern: '^0x[a-fA-F0-9]{64}$'
+              description: Nullifier hash
+            commitmentIndex:
+              type: integer
+              description: Index of the spent commitment
+        block:
+          type: object
+          required:
+            - number
+            - hash
+            - timestamp
+          properties:
+            number:
+              type: integer
+            hash:
+              type: string
+              pattern: '^0x[a-fA-F0-9]{64}$'
+            timestamp:
+              type: integer
+        transactionHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+
+    WebhookAcknowledgment:
+      type: object
+      properties:
+        received:
+          type: boolean
+          const: true
+        eventId:
+          type: string
+        status:
+          type: string
+          enum:
+            - accepted
+            - duplicate
+            - processing
+        timestamp:
+          type: string
+          format: date-time
+
+    MerkleRootResponse:
+      type: object
+      properties:
+        vaultId:
+          type: string
+          format: uuid
+        chainId:
+          type: integer
+        root:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Current Merkle root hash
+        blockNumber:
+          type: integer
+          description: Block number of the latest commitment
+        updatedAt:
+          type: string
+          format: date-time
+
+    MerklePathResponse:
+      type: object
+      properties:
+        vaultId:
+          type: string
+          format: uuid
+        chainId:
+          type: integer
+        leafIndex:
+          type: integer
+          minimum: 0
+          maximum: 1048575
+        root:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+              hash:
+                type: string
+                pattern: '^0x[a-fA-F0-9]{64}$'
+              side:
+                type: string
+                enum:
+                  - left
+                  - right
+          description: 20 hash values for ZK proof witness
+        proofGeneratedAt:
+          type: string
+          format: date-time
+
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        version:
+          type: string
+        checks:
+          type: object
+          properties:
+            database:
+              type: boolean
+            merkleTree:
+              type: boolean
+        uptime:
+          type: number
+          description: Uptime in seconds
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
