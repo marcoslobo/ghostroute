@@ -1,0 +1,40 @@
+{
+  "tasks": {
+    "start": "deno run -A --watch=supabase/functions/ supabase/functions/webhook/index.ts",
+    "test": "deno test --allow-all tests/",
+    "check": "deno fmt && deno lint"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "fmt": {
+    "files": {
+      "include": ["supabase/functions/", "src/"],
+      "exclude": ["supabase/migrations/"]
+    },
+    "options": {
+      "useTabs": true,
+      "lineWidth": 120,
+      "singleQuote": true,
+      "proseWrap": "preserve"
+    }
+  },
+  "lint": {
+    "files": {
+      "include": ["supabase/functions/", "src/"],
+      "exclude": ["supabase/migrations/"]
+    },
+    "rules": {
+      "tags": ["recommended"],
+      "include": ["ban-untagged-todo"],
+      "exclude": ["no-unused-vars"]
+    }
+  },
+  "importMap": "import_map.json"
+}

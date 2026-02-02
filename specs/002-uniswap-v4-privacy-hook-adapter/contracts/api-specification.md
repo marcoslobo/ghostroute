@@ -216,7 +216,7 @@ interface IPrivacyVault {
 
 ### Transient Authorization Layout
 
-**Storage Slot:** `keccak256("anonex.privacy.authorized")`
+**Storage Slot:** `keccak256("ghostroute.privacy.authorized")`
 
 **Data Format:**
 ```

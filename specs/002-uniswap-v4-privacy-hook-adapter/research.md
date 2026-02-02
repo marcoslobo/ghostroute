@@ -56,7 +56,7 @@ function getHookPermissions() public pure override returns (Hooks.Permissions me
 
 **Implementation Details:**
 - Use Solidity's `tstore` and `tload` opcodes (available in ^0.8.24)
-- Define a unique slot identifier (e.g., `keccak256("anonex.privacy.authorized")`)
+- Define a unique slot identifier (e.g., `keccak256("ghostroute.privacy.authorized")`)
 - Store a boolean or authorized address in the slot
 
 **Alternatives Considered:**

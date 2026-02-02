@@ -1,8 +1,8 @@
 # Solidity/Foundry
-anonex-contracts/lib/
-anonex-contracts/out/
-anonex-contracts/cache/
-anonex-contracts/broadcast/
+ghostroute-contracts/lib/
+ghostroute-contracts/out/
+ghostroute-contracts/cache/
+ghostroute-contracts/broadcast/
 
 # Dependencies
 node_modules/
@@ -51,7 +51,9 @@ docs/_build/
 deno/
 .cache/deno/
 .deps/
-*/
 
 # Supabase
 .supabase/
+
+/.next/
+ghostroute-ui/.next/

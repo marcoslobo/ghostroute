@@ -3,7 +3,7 @@
 **Feature Branch**: `001-privacy-vault`  
 **Created**: 2026-01-30  
 **Status**: Draft  
-**Input**: User description: "Help me implement the first task of the AnonLP project based on the Constitution. We need to create PrivacyVault.sol with an incremental Merkle Tree (height 20). Use Foundry for tests and ensure it supports both ETH and ERC20 via Permit2. Focus on gas efficiency for the insertLeaf function."
+**Input**: User description: "Help me implement the first task of the GhostRoute project based on the Constitution. We need to create PrivacyVault.sol with an incremental Merkle Tree (height 20). Use Foundry for tests and ensure it supports both ETH and ERC20 via Permit2. Focus on gas efficiency for the insertLeaf function."
 
 ## User Scenarios & Testing *(mandatory)*
 
