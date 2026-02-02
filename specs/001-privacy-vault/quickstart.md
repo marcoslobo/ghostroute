@@ -16,7 +16,7 @@ PrivacyVault is a gas-efficient, privacy-preserving smart contract that enables 
 ### 1. Clone and Install
 ```bash
 git clone <repository-url>
-cd anonex
+cd ghostroute
 forge install
 npm install
 ```
@@ -248,7 +248,7 @@ contract NewFeatureTest is Test {
 
 ### Constitutional Compliance
 
-This implementation follows AnonLP constitutional requirements:
+This implementation follows GhostRoute constitutional requirements:
 
 - ✅ **Privacy by Default**: Zero-knowledge proof architecture
 - ✅ **Economic Integrity**: Atomic transaction handling

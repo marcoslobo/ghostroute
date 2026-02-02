@@ -1,4 +1,4 @@
-# anonex Development Guidelines
+# GhostRoute Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-01-30
 
@@ -38,14 +38,14 @@ Solidity ^0.8.20: Follow standard conventions
 
 ### Unit Tests
 ```bash
-cd anonex-zk-api
+cd ghostroute-zk-api
 export PATH="$HOME/.deno/bin:$PATH"
 deno test --no-check --allow-all tests/unit/
 ```
 
 ### Mock E2E Test (without infrastructure)
 ```bash
-cd anonex-zk-api
+cd ghostroute-zk-api
 export PATH="$HOME/.deno/bin:$PATH"
 deno run --allow-all scripts/mock-e2e-test.ts
 ```
@@ -53,22 +53,22 @@ deno run --allow-all scripts/mock-e2e-test.ts
 ### Full E2E Test (requires Anvil + Supabase local)
 ```bash
 # Terminal 1: Start Anvil
-cd anonex-contracts
+cd ghostroute-contracts
 anvil
 
 # Terminal 2: Start Supabase
-cd anonex-zk-api/supabase
+cd ghostroute-zk-api/supabase
 supabase start
 
 # Terminal 3: Run E2E test
 export PATH="$HOME/.deno/bin:$PATH"
-cd anonex-zk-api
+cd ghostroute-zk-api
 deno run --allow-all scripts/e2e-test.ts
 ```
 
 ### Deploy PrivacyVault to Local Network
 ```bash
-cd anonex-contracts
+cd ghostroute-contracts
 forge script script/DeployPrivacyVault.s.sol --fork-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --json
 ```
 

@@ -3,18 +3,18 @@ version: '3.8'
 services:
   anvil:
     image: ghcr.io/foundry-rs/foundry:latest
-    container_name: anonex-anvil
+    container_name: ghostroute-anvil
     command: anvil --host 0.0.0.0 --port 8545
     ports:
       - "8545:8545"
     environment:
       - ANVIL_IP_ADDR=0.0.0.0
     networks:
-      - anonex-network
+      - ghostroute-network
 
   supabase:
     image: supabase/local:latest
-    container_name: anonex-supabase
+    container_name: ghostroute-supabase
     ports:
       - "54321:54321"
       - "54322:54322"
@@ -29,11 +29,11 @@ services:
     depends_on:
       - anvil
     networks:
-      - anonex-network
+      - ghostroute-network
 
   zk-api:
     image: deno:1.40
-    container_name: anonex-zk-api
+    container_name: ghostroute-zk-api
     command: deno run --allow-all scripts/e2e-test.ts
     environment:
       - SUPABASE_URL=http://supabase:54321
@@ -45,11 +45,11 @@ services:
     depends_on:
       - supabase
     networks:
-      - anonex-network
+      - ghostroute-network
 
 volumes:
   supabase_db_data:
 
 networks:
-  anonex-network:
+  ghostroute-network:
     driver: bridge

@@ -1,7 +1,7 @@
 #!/usr/bin/env deno run --allow-all
 
 /**
- * E2E Test Script for anonex-zk-api
+ * E2E Test Script for ghostroute-zk-api
  *
  * This script:
  * 1. Verifies Anvil is running
@@ -22,7 +22,7 @@ interface E2EConfig {
 }
 
 const DEFAULT_CONFIG: E2EConfig = {
-  anvilUrl: Deno.env.get("ANVIL_URL") || "http://anonex-anvil:8545",
+  anvilUrl: Deno.env.get("ANVIL_URL") || "http://ghostroute-anvil:8545",
   postgresUrl: Deno.env.get("POSTGRES_URL") || "postgresql://postgres:postgres@postgres:5432/postgres",
   privateKey: Deno.env.get("PRIVATE_KEY") || "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   chainId: 31337,
@@ -102,12 +102,12 @@ async function recordProcessedEvent(
 
 export async function runE2ETest(config: E2EConfig = DEFAULT_CONFIG): Promise<void> {
   console.log("=".repeat(60));
-  console.log("ANONEX ZK API E2E TEST");
+  console.log("GHOSTROUTE ZK API E2E TEST");
   console.log("=".repeat(60));
 
   const anvilUrls = [
     config.anvilUrl,
-    "http://anonex-anvil:8545",
+    "http://ghostroute-anvil:8545",
     "http://127.0.0.1:8545",
   ];
 
@@ -143,7 +143,7 @@ export async function runE2ETest(config: E2EConfig = DEFAULT_CONFIG): Promise<vo
   }
 
   console.log("\n[3/6] Deploying PrivacyVault...");
-  const deployScript = `cd /home/marcos-lobo/projetos/hackathons/anonex/anonex-contracts && forge script script/DeployPrivacyVault.s.sol --fork-url ${anvilUrl} --private-key ${config.privateKey} --json`;
+  const deployScript = `cd /home/marcos-lobo/projetos/hackathons/anonex/ghostroute-contracts && forge script script/DeployPrivacyVault.s.sol --fork-url ${anvilUrl} --private-key ${config.privateKey} --json`;
 
   let vaultAddress = "0x" + "a".repeat(40);
   try {

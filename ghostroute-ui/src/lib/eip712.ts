@@ -1,5 +1,5 @@
 export const EIP712_DOMAIN = {
-  name: 'AnonLP',
+  name: 'GhostRoute',
   version: '1',
   chainId: BigInt(11155111),
   verifyingContract: (process.env.NEXT_PUBLIC_PRIVACY_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,

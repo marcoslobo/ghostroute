@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AnonLP - Privacy Vault",
+  title: "GhostRoute - Privacy Vault",
   description: "Zero-knowledge privacy vault for DeFi interactions",
 };
 

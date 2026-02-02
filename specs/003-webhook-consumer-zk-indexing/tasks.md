@@ -23,7 +23,7 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 **Purpose**: Project initialization and basic structure for Supabase Edge Functions
 
-- [X] T001 Create project directory structure at `anonex-zk-api/` per plan.md
+- [X] T001 Create project directory structure at `ghostroute-zk-api/` per plan.md
 - [X] T002 Initialize Deno project with `deno.json` configuration
 - [X] T003 Create `import_map.json` for external dependencies (poseidon-lite, @supabase/supabase-js, @zk-kit/smt)
 - [X] T004 [P] Configure Supabase project structure with `supabase/config.toml`
@@ -37,12 +37,12 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T010 Create database utilities in `anonex-zk-api/src/utils/db.ts` with Supabase client initialization
-- [X] T011 [P] Implement Poseidon hasher wrapper in `anonex-zk-api/src/merkle/hasher.ts` using poseidon-lite and scroll-tech/poseidon-bn254
-- [X] T012 [P] Implement base Merkle Tree interface in `anonex-zk-api/src/merkle/tree.ts` with @zk-kit/smt
-- [X] T013 [P] Implement idempotency service in `anonex-zk-api/src/idempotency/dedup.ts` for deduplication key management
-- [X] T014 Create vault service in `anonex-zk-api/src/handlers/events.ts` for vault lookup and creation by chainId+vaultAddress
-- [X] T015 Configure environment variable types in `anonex-zk-api/.env.example`
+- [X] T010 Create database utilities in `ghostroute-zk-api/src/utils/db.ts` with Supabase client initialization
+- [X] T011 [P] Implement Poseidon hasher wrapper in `ghostroute-zk-api/src/merkle/hasher.ts` using poseidon-lite and scroll-tech/poseidon-bn254
+- [X] T012 [P] Implement base Merkle Tree interface in `ghostroute-zk-api/src/merkle/tree.ts` with @zk-kit/smt
+- [X] T013 [P] Implement idempotency service in `ghostroute-zk-api/src/idempotency/dedup.ts` for deduplication key management
+- [X] T014 Create vault service in `ghostroute-zk-api/src/handlers/events.ts` for vault lookup and creation by chainId+vaultAddress
+- [X] T015 Configure environment variable types in `ghostroute-zk-api/.env.example`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -59,13 +59,13 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 ### Implementation for User Story 1
 
-- [X] T020 [P] [US1] Create webhook payload types in `anonex-zk-api/src/handlers/webhook.ts` for NewCommitmentPayload and NullifierSpentPayload
-- [X] T021 [P] [US1] Implement payload validation schema in `anonex-zk-api/src/handlers/webhook.ts` with Zod or similar
-- [X] T022 [US1] Implement webhook signature verification in `anonex-zk-api/src/handlers/webhook.ts` for X-Webhook-Signature header
-- [X] T023 [US1] Implement NewCommitment event handler in `anonex-zk-api/src/handlers/events.ts` (inserts commitment, updates Merkle tree, records event)
-- [X] T024 [US1] Implement NullifierSpent event handler in `anonex-zk-api/src/handlers/events.ts` (records nullifier, marks commitment as spent)
-- [X] T025 [US1] Implement idempotency check in `anonex-zk-api/src/handlers/webhook.ts` using processed_events table
-- [X] T026 [US1] Create Supabase Edge Function at `anonex-zk-api/supabase/functions/webhook/index.ts` for webhook endpoint
+- [X] T020 [P] [US1] Create webhook payload types in `ghostroute-zk-api/src/handlers/webhook.ts` for NewCommitmentPayload and NullifierSpentPayload
+- [X] T021 [P] [US1] Implement payload validation schema in `ghostroute-zk-api/src/handlers/webhook.ts` with Zod or similar
+- [X] T022 [US1] Implement webhook signature verification in `ghostroute-zk-api/src/handlers/webhook.ts` for X-Webhook-Signature header
+- [X] T023 [US1] Implement NewCommitment event handler in `ghostroute-zk-api/src/handlers/events.ts` (inserts commitment, updates Merkle tree, records event)
+- [X] T024 [US1] Implement NullifierSpent event handler in `ghostroute-zk-api/src/handlers/events.ts` (records nullifier, marks commitment as spent)
+- [X] T025 [US1] Implement idempotency check in `ghostroute-zk-api/src/handlers/webhook.ts` using processed_events table
+- [X] T026 [US1] Create Supabase Edge Function at `ghostroute-zk-api/supabase/functions/webhook/index.ts` for webhook endpoint
 
 **Checkpoint**: User Story 1 complete - webhook ingestion works with idempotency
 
@@ -82,11 +82,11 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 ### Implementation for User Story 2
 
-- [X] T030 [P] [US2] Implement Merkle path computation in `anonex-zk-api/src/merkle/path.ts` for 20-level tree
-- [X] T031 [P] [US2] Implement sparse Merkle tree update in `anonex-zk-api/src/merkle/tree.ts` with node persistence to database
-- [X] T032 [US2] Implement block confirmation check in `anonex-zk-api/src/handlers/events.ts` for reorg handling
-- [X] T033 [US2] Implement Merkle root retrieval in `anonex-zk-api/src/merkle/tree.ts` for current vault root
-- [X] T034 [US2] Implement batch tree update for multiple commitments in `anonex-zk-api/src/merkle/tree.ts`
+- [X] T030 [P] [US2] Implement Merkle path computation in `ghostroute-zk-api/src/merkle/path.ts` for 20-level tree
+- [X] T031 [P] [US2] Implement sparse Merkle tree update in `ghostroute-zk-api/src/merkle/tree.ts` with node persistence to database
+- [X] T032 [US2] Implement block confirmation check in `ghostroute-zk-api/src/handlers/events.ts` for reorg handling
+- [X] T033 [US2] Implement Merkle root retrieval in `ghostroute-zk-api/src/merkle/tree.ts` for current vault root
+- [X] T034 [US2] Implement batch tree update for multiple commitments in `ghostroute-zk-api/src/merkle/tree.ts`
 
 **Checkpoint**: User Story 2 complete - Merkle tree updates correctly with proper hashing
 
@@ -103,17 +103,17 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 ### Implementation for User Story 3
 
-- [X] T040 [P] [US3] Create Supabase Edge Function at `anonex-zk-api/supabase/functions/merkle-root/index.ts` for GET /merkle-root endpoint
-- [X] T041 [P] [US3] Create Supabase Edge Function at `anonex-zk-api/supabase/functions/merkle-path/index.ts` for GET /merkle-path endpoint
-- [X] T042 [US3] Implement MerklePathResponse schema matching openapi.yaml in `anonex-zk-api/src/merkle/path.ts`
+- [X] T040 [P] [US3] Create Supabase Edge Function at `ghostroute-zk-api/supabase/functions/merkle-root/index.ts` for GET /merkle-root endpoint
+- [X] T041 [P] [US3] Create Supabase Edge Function at `ghostroute-zk-api/supabase/functions/merkle-path/index.ts` for GET /merkle-path endpoint
+- [X] T042 [US3] Implement MerklePathResponse schema matching openapi.yaml in `ghostroute-zk-api/src/merkle/path.ts`
 - [X] T043 [US3] Add input validation (chainId, vaultId, leafIndex) in merkle-path function
-- [X] T044 [US3] Add caching layer for frequently accessed Merkle paths in `anonex-zk-api/src/merkle/path.ts`
+- [X] T044 [US3] Add caching layer for frequently accessed Merkle paths in `ghostroute-zk-api/src/merkle/path.ts`
 
 ### Implementation for User Story 4
 
-- [X] T050 [P] [US4] Create Supabase Edge Function at `anonex-zk-api/supabase/functions/health/index.ts` for GET /health endpoint
-- [X] T051 [US4] Implement database connectivity check in `anonex-zk-api/src/utils/db.ts`
-- [X] T052 [US4] Add Merkle tree integrity check in `anonex-zk-api/src/merkle/tree.ts`
+- [X] T050 [P] [US4] Create Supabase Edge Function at `ghostroute-zk-api/supabase/functions/health/index.ts` for GET /health endpoint
+- [X] T051 [US4] Implement database connectivity check in `ghostroute-zk-api/src/utils/db.ts`
+- [X] T052 [US4] Add Merkle tree integrity check in `ghostroute-zk-api/src/merkle/tree.ts`
 - [X] T053 [US4] Add uptime tracking and version info in health function
 
 **Checkpoint**: User Story 4 complete - Health endpoint available for monitoring
@@ -131,11 +131,11 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 ### Implementation for User Story 5
 
-- [X] T060 [P] [US5] Implement reorg detection in `anonex-zk-api/src/handlers/events.ts` (lower block number than latest)
-- [X] T061 [P] [US5] Implement tree rollback to common ancestor in `anonex-zk-api/src/merkle/tree.ts`
-- [X] T062 [US5] Implement event reversion in `anonex-zk-api/src/handlers/events.ts` (update status to reverted)
+- [X] T060 [P] [US5] Implement reorg detection in `ghostroute-zk-api/src/handlers/events.ts` (lower block number than latest)
+- [X] T061 [P] [US5] Implement tree rollback to common ancestor in `ghostroute-zk-api/src/merkle/tree.ts`
+- [X] T062 [US5] Implement event reversion in `ghostroute-zk-api/src/handlers/events.ts` (update status to reverted)
 - [X] T063 [US5] Implement re-fetch mechanism for reverted events from chain
-- [X] T064 [US5] Add reorg logging and alerting in `anonex-zk-api/src/utils/db.ts`
+- [X] T064 [US5] Add reorg logging and alerting in `ghostroute-zk-api/src/utils/db.ts`
 
 **Checkpoint**: User Story 5 complete - System handles reorgs gracefully
 
@@ -145,11 +145,11 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [X] T070 [P] Add comprehensive logging across all functions in `anonex-zk-api/src/utils/db.ts`
-- [X] T071 [P] Add error handling and response standardization in `anonex-zk-api/src/handlers/webhook.ts`
+- [X] T070 [P] Add comprehensive logging across all functions in `ghostroute-zk-api/src/utils/db.ts`
+- [X] T071 [P] Add error handling and response standardization in `ghostroute-zk-api/src/handlers/webhook.ts`
 - [X] T072 [P] Optimize database queries with proper indexes in `supabase/migrations/001_initial_schema.sql`
 - [X] T073 [P] Add Row Level Security (RLS) policies for data protection in `supabase/migrations/002_rls_policies.sql`
-- [X] T074 Update `anonex-zk-api/quickstart.md` with final setup instructions
+- [X] T074 Update `ghostroute-zk-api/quickstart.md` with final setup instructions
 - [X] T075 [P] Create `README.md` with API documentation and examples
 
 ---
@@ -210,12 +210,12 @@ description: "Task list for Webhook Consumer for ZK Indexing"
 
 ```bash
 # Launch webhook payload types and validation together:
-Task: "Create webhook payload types in anonex-zk-api/src/handlers/webhook.ts"
-Task: "Implement payload validation schema in anonex-zk-api/src/handlers/webhook.ts"
+Task: "Create webhook payload types in ghostroute-zk-api/src/handlers/webhook.ts"
+Task: "Implement payload validation schema in ghostroute-zk-api/src/handlers/webhook.ts"
 
 # Launch webhook function and signature verification together:
-Task: "Implement webhook signature verification in anonex-zk-api/src/handlers/webhook.ts"
-Task: "Create Supabase Edge Function at anonex-zk-api/supabase/functions/webhook/index.ts"
+Task: "Implement webhook signature verification in ghostroute-zk-api/src/handlers/webhook.ts"
+Task: "Create Supabase Edge Function at ghostroute-zk-api/supabase/functions/webhook/index.ts"
 ```
 
 ---

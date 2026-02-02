@@ -113,7 +113,7 @@ const nextConfig = {
 **Implementation Pattern**:
 ```typescript
 const domain = {
-  name: 'AnonLP',
+  name: 'GhostRoute',
   version: '1',
   chainId: 11155111,
   verifyingContract: '0x...', // Privacy Vault contract address
@@ -158,7 +158,7 @@ function deriveMasterSecret(signatureHash: string): Uint8Array {
     'sha256',
     Buffer.from(signatureHash.slice(2), 'hex'),
     '', // salt - can be empty or use application-specific salt
-    'AnonLP Master Secret:v1',
+    'GhostRoute Master Secret:v1',
     32 // output length (256 bits)
   )
 }

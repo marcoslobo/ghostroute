@@ -54,7 +54,7 @@ contract ReentrancyGuard {
     bool private locked = false;
     
     modifier nonReentrant() {
-        require(!locked, PrivacyVaultErrors.ReentrancyDetected());
+        if (locked) revert PrivacyVaultErrors.ReentrancyDetected();
         locked = true;
         _;
         locked = false;

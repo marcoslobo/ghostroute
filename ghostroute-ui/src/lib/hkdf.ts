@@ -2,8 +2,8 @@ import { createHash } from 'crypto'
 
 export function deriveMasterSecret(signatureHash: string): Uint8Array {
   const ikm = Buffer.from(signatureHash.slice(2), 'hex')
-  const salt = 'AnonLP Salt:v1'
-  const info = 'AnonLP Master Secret:v1'
+  const salt = 'GhostRoute Salt:v1'
+  const info = 'GhostRoute Master Secret:v1'
 
   return hkdfSha256(ikm, salt, info, 32)
 }

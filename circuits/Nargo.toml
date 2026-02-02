@@ -1,7 +1,7 @@
 [package]
-name = "anonex_privacy_circuit"
+name = "ghostroute_privacy_circuit"
 type = "bin"
-authors = ["AnonLP Team"]
+authors = ["GhostRoute Team"]
 compiler_version = ">=0.32.0"
 
 [dependencies]

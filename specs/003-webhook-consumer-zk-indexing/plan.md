@@ -1,6 +1,6 @@
 # Implementation Plan: Webhook Consumer for ZK Indexing
 
-**Branch**: `003-webhook-consumer-zk-indexing` | **Date**: 2026-02-01 | **Spec**: [link](/home/marcos-lobo/projetos/hackathons/anonex/specs/003-webhook-consumer-zk-indexing/spec.md)
+**Branch**: `003-webhook-consumer-zk-indexing` | **Date**: 2026-02-01 | **Spec**: [link](/home/marcos-lobo/projetos/hackathons/ghostroute/specs/003-webhook-consumer-zk-indexing/spec.md)
 **Input**: Feature specification from `/specs/003-webhook-consumer-zk-indexing/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
@@ -62,7 +62,7 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```text
-anonex-zk-api/
+ghostroute-zk-api/
 ├── supabase/
 │   ├── config.toml          # Supabase configuration
 │   ├── functions/
@@ -98,7 +98,7 @@ anonex-zk-api/
 └── import_map.json
 ```
 
-**Structure Decision**: Supabase Edge Functions project under `anonex-zk-api/`. Uses Deno runtime. Functions in `supabase/functions/` are deployed as Edge Functions. Database schema managed via Supabase migrations.
+**Structure Decision**: Supabase Edge Functions project under `ghostroute-zk-api/`. Uses Deno runtime. Functions in `supabase/functions/` are deployed as Edge Functions. Database schema managed via Supabase migrations.
 
 ## Unknowns (Phase 0 Research Required)
 
@@ -138,5 +138,5 @@ See `research.md` for consolidated findings.
 
 ### Next Steps (Phase 2)
 - Generate `tasks.md` with implementation tasks
-- Begin source code implementation in `anonex-zk-api/`
+- Begin source code implementation in `ghostroute-zk-api/`
 - Set up Supabase functions and database migrations

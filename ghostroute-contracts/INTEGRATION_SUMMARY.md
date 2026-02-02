@@ -7,12 +7,12 @@ Successfully integrated the Noir ZK circuit verification into PrivacyVault.sol a
 ## Files Created/Modified
 
 ### New Files
-- `anonex-contracts/interfaces/IZKVerifier.sol` - Interface for ZK verifier contract
-- `anonex-contracts/mocks/MockZKVerifier.sol` - Mock verifier for testing
+- `ghostroute-contracts/interfaces/IZKVerifier.sol` - Interface for ZK verifier contract
+- `ghostroute-contracts/mocks/MockZKVerifier.sol` - Mock verifier for testing
 
 ### Modified Files
-- `anonex-contracts/PrivacyVault.sol` - Added executeAction function and ZK integration
-- `anonex-contracts/test/PrivacyVault.t.sol` - Added comprehensive test suite
+- `ghostroute-contracts/PrivacyVault.sol` - Added executeAction function and ZK integration
+- `ghostroute-contracts/test/PrivacyVault.t.sol` - Added comprehensive test suite
 
 ## Implementation Details
 
@@ -84,7 +84,7 @@ Replace MockZKVerifier with actual verifier contract generated from Noir circuit
 
 ```bash
 # Generate with barretenberg
-bb write_vk -b ./circuits/target/anonex_privacy_circuit.json -o ./target --oracle_hash keccak
+bb write_vk -b ./circuits/target/ghostroute_privacy_circuit.json -o ./target --oracle_hash keccak
 bb write_solidity_verifier -k ./target/vk -o ./target/Verifier.sol
 ```
 

@@ -4,7 +4,7 @@
 
 - **API**: Supabase Edge Functions (Deno runtime)
 - **Database**: Supabase PostgreSQL (managed)
-- **Location**: `anonex-zk-api/`
+- **Location**: `ghostroute-zk-api/`
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@
 
 ```bash
 # Clone and navigate to API directory
-cd anonex-zk-api
+cd ghostroute-zk-api
 
 # Install Supabase CLI (if not installed)
 npm install -g supabase

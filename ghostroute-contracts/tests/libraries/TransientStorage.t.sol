@@ -19,7 +19,7 @@ contract TransientStorageTest is Test {
     
     function test_AuthorizationSlotIsConsistent() public pure {
         // Verify the slot is computed consistently
-        bytes32 expectedSlot = keccak256("anonex.privacy.authorized");
+        bytes32 expectedSlot = keccak256("ghostroute.privacy.authorized");
         assertEq(TransientStorage.AUTHORIZATION_SLOT, expectedSlot);
     }
     

@@ -13,9 +13,9 @@ library TransientStorage {
     
     /**
      * @notice Slot for authorization status (address of authorized caller)
-     * @dev Computed as keccak256("anonex.privacy.authorized")
+     * @dev Computed as keccak256("ghostroute.privacy.authorized")
      */
-    bytes32 internal constant AUTHORIZATION_SLOT = keccak256("anonex.privacy.authorized");
+    bytes32 internal constant AUTHORIZATION_SLOT = keccak256("ghostroute.privacy.authorized");
     
     /**
      * @notice Writes an address value to transient storage

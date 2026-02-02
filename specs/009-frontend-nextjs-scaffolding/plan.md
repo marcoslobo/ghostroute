@@ -1,6 +1,6 @@
 # Implementation Plan: Next.js 14+ Frontend Scaffolding & ZK-Wasm Infrastructure
 
-**Branch**: `009-frontend-nextjs-scaffolding` | **Date**: 2026-02-02 | **Spec**: [link](/home/marcos-lobo/projetos/hackathons/anonex/specs/009-frontend-nextjs-scaffolding/spec.md)
+**Branch**: `009-frontend-nextjs-scaffolding` | **Date**: 2026-02-02 | **Spec**: [link](/home/marcos-lobo/projetos/hackathons/ghostroute/specs/009-frontend-nextjs-scaffolding/spec.md)
 **Input**: Feature specification from `/specs/009-frontend-nextjs-scaffolding/spec.md`
 
 ## Summary
@@ -51,7 +51,7 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```text
-apps/anonex-ui/
+apps/ghostroute-ui/
 ├── public/
 │   ├── circuits/              # Noir circuit artifacts (.json)
 │   └── wasm/                  # Barretenberg Wasm binaries
@@ -86,7 +86,7 @@ apps/anonex-ui/
 **Structure Decision**: Web application with Next.js App Router. Project will be located at `apps/web` directory with modular architecture separating components, hooks, services, and ZK proving workers.
 
 ```text
-apps/anonex-ui/
+apps/ghostroute-ui/
 ├── public/
 │   ├── circuits/              # Noir circuit artifacts (.json)
 │   └── wasm/                  # Barretenberg Wasm binaries
