@@ -20,7 +20,7 @@ description: "Task list for PrivacyVault implementation"
 
 ## Path Conventions
 
-- **Smart contract project**: `anonex-contracts/`, `tests/` at repository root
+- **Smart contract project**: `ghostroute-contracts/`, `tests/` at repository root
 - Paths follow the structure defined in plan.md
 
 ---
@@ -72,16 +72,16 @@ description: "Task list for PrivacyVault implementation"
 
 ### Implementation for User Story 1
 
-- [X] T025 [P] [US1] Create IPrivacyVault interface in anonex-contracts/interfaces/IPrivacyVault.sol
-- [X] T026 [P] [US1] Create Deposit struct definitions in anonex-contracts/types/Deposit.sol
-- [X] T027 [P] [US1] Create IMerkleTree interface in anonex-contracts/interfaces/IMerkleTree.sol
-- [X] T028 [US1] Implement PrivacyVault state variables and constructor in anonex-contracts/PrivacyVault.sol
-- [X] T029 [US1] Implement depositWithPermit function in anonex-contracts/PrivacyVault.sol (depends on T025, T026, T027, T028)
-- [X] T030 [US1] Implement Merkle Tree insertion logic in anonex-contracts/PrivacyVault.sol (depends on T029)
-- [X] T031 [US1] Implement Permit2 validation and token transfer logic in anonex-contracts/PrivacyVault.sol (depends on T029)
-- [X] T032 [US1] Implement nullifier tracking and validation in anonex-contracts/PrivacyVault.sol (depends on T029)
-- [X] T033 [US1] Add view functions (getMerkleRoot, verifyMerkleProof, getTreeInfo) in anonex-contracts/PrivacyVault.sol
-- [X] T034 [US1] Add events and error definitions in anonex-contracts/PrivacyVault.sol
+- [X] T025 [P] [US1] Create IPrivacyVault interface in ghostroute-contracts/interfaces/IPrivacyVault.sol
+- [X] T026 [P] [US1] Create Deposit struct definitions in ghostroute-contracts/types/Deposit.sol
+- [X] T027 [P] [US1] Create IMerkleTree interface in ghostroute-contracts/interfaces/IMerkleTree.sol
+- [X] T028 [US1] Implement PrivacyVault state variables and constructor in ghostroute-contracts/PrivacyVault.sol
+- [X] T029 [US1] Implement depositWithPermit function in ghostroute-contracts/PrivacyVault.sol (depends on T025, T026, T027, T028)
+- [X] T030 [US1] Implement Merkle Tree insertion logic in ghostroute-contracts/PrivacyVault.sol (depends on T029)
+- [X] T031 [US1] Implement Permit2 validation and token transfer logic in ghostroute-contracts/PrivacyVault.sol (depends on T029)
+- [X] T032 [US1] Implement nullifier tracking and validation in ghostroute-contracts/PrivacyVault.sol (depends on T029)
+- [X] T033 [US1] Add view functions (getMerkleRoot, verifyMerkleProof, getTreeInfo) in ghostroute-contracts/PrivacyVault.sol
+- [X] T034 [US1] Add events and error definitions in ghostroute-contracts/PrivacyVault.sol
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 

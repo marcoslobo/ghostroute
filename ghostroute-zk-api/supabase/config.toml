@@ -1,0 +1,15 @@
+[auth]
+enabled = true
+enable_manual_linking = false
+
+[functions]
+# Custom URLs for local development
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[postgres]
+# Database configuration is managed via Supabase Dashboard
+# Migrations should be placed in the migrations/ directory

@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# E2E Test Runner for anonex using Podman
+# E2E Test Runner for ghostroute using Podman
 # This script sets up the full environment and runs end-to-end tests
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
-CONTRACTS_DIR="$PROJECT_ROOT/anonex-contracts"
+CONTRACTS_DIR="$PROJECT_ROOT/ghostroute-contracts"
 
 echo "========================================"
-echo "ANONEX ZK API - E2E Test Runner (Podman)"
+echo "GHOSTROUTE ZK API - E2E Test Runner (Podman)"
 echo "========================================"
 
 RED='\033[0;31m'
@@ -51,7 +51,7 @@ cd "$PROJECT_ROOT"
 
 if ! curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
     echo "Starting Anvil on host..."
-    cd "$PROJECT_ROOT/anonex-contracts"
+    cd "$PROJECT_ROOT/ghostroute-contracts"
     anvil > /dev/null 2>&1 &
     ANVIL_PID=$!
     cd "$PROJECT_ROOT"
@@ -59,6 +59,13 @@ if ! curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params
     sleep 3
 else
     echo "Anvil already running on host"
+fi
+
+if ! podman network inspect ghostroute-network &>/dev/null; then
+    echo "Creating ghostroute-network..."
+    podman network create ghostroute-network
+else
+    echo "Network ghostroute-network already exists"
 fi
 
 podman compose -f docker-compose.e2e.yml down --volumes --remove-orphans 2>/dev/null || true
@@ -91,13 +98,13 @@ export POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 export PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 export CHAIN_ID="31337"
 
-cd "$PROJECT_ROOT/anonex-zk-api"
+cd "$PROJECT_ROOT/ghostroute-zk-api"
 
 if [ ! -f "supabase/migrations/001_initial_schema.sql" ]; then
     echo "Warning: Migration file not found, database may not be initialized"
 else
     echo "Running database migrations..."
-    podman exec -i anonex-postgres psql -U postgres -d postgres < supabase/migrations/001_initial_schema.sql 2>/dev/null || true
+    podman exec -i ghostroute-postgres psql -U postgres -d postgres < supabase/migrations/001_initial_schema.sql 2>/dev/null || true
 fi
 
 deno run --allow-all scripts/e2e-test.ts

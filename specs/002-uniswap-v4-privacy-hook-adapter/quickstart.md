@@ -255,7 +255,7 @@ contract PrivacyVault {
             abi.decode(data, (PoolKey, IPoolManager.ModifyLiquidityParams, address));
         
         // 3. Set transient authorization
-        bytes32 slot = keccak256("anonex.privacy.authorized");
+        bytes32 slot = keccak256("ghostroute.privacy.authorized");
         address target = recipient;
         assembly {
             tstore(slot, target)
