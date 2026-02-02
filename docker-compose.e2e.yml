@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:15
+    container_name: anonex-postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./anonex-zk-api/supabase/migrations:/docker-entrypoint-initdb.d/migrations
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - anonex-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  deploy-and-test:
+    image: docker.io/denoland/deno:1.46.0
+    container_name: anonex-e2e-test
+    command: >
+      bash -c "sleep 10 && deno run --allow-all /workspace/anonex-zk-api/scripts/e2e-test.ts"
+    environment:
+      ANVIL_URL: http://127.0.0.1:8545
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      PRIVATE_KEY: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      CHAIN_ID: "31337"
+    volumes:
+      - .:/workspace
+      - deno_cache:/deno/.cache
+    working_dir: /workspace
+    networks:
+      - anonex-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  deno_cache:
+
+networks:
+  anonex-network:
+    driver: bridge
+    external: true
