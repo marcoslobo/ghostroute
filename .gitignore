@@ -46,3 +46,12 @@ docs/_build/
 # Temporary files
 *.tmp
 *.temp
+
+# Deno
+deno/
+.cache/deno/
+.deps/
+*/
+
+# Supabase
+.supabase/
