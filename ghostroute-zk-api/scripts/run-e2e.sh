@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# E2E Test Runner for anonex-zk-api
+# E2E Test Runner for ghostroute-zk-api
 # This script sets up the full environment and runs end-to-end tests
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CONTRACTS_DIR="$PROJECT_ROOT/../anonex-contracts"
+CONTRACTS_DIR="$PROJECT_ROOT/../ghostroute-contracts"
 
 echo "========================================"
-echo "ANONEX ZK API - E2E Test Runner"
+echo "GHOSTROUTE ZK API - E2E Test Runner"
 echo "========================================"
 
 # Colors for output

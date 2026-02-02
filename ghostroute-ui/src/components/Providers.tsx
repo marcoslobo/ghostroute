@@ -11,7 +11,7 @@ interface ProvidersProps {
 }
 
 const config = getDefaultConfig({
-  appName: 'AnonLP Privacy Vault',
+  appName: 'GhostRoute Privacy Vault',
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo',
   chains: [mainnet, sepolia],
   ssr: false,

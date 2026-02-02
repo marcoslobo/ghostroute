@@ -1,7 +1,7 @@
 #!/usr/bin/env deno run --allow-all
 
 /**
- * Mock E2E Test for anonex-zk-api
+ * Mock E2E Test for ghostroute-zk-api
  * 
  * This script simulates the full E2E flow without requiring:
  * - Anvil (uses mock RPC responses)
@@ -83,7 +83,7 @@ class MockMerkleTreeService {
 
 async function runMockE2ETest(): Promise<void> {
   console.log("=".repeat(60));
-  console.log("ANONEX ZK API - MOCK E2E TEST");
+  console.log("GHOSTROUTE ZK API - MOCK E2E TEST");
   console.log("=".repeat(60));
 
   const db = new MockDatabase();

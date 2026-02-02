@@ -72,7 +72,7 @@ Pending -> Processing -> Completed
 
 ### EIP-712 Signature Validation
 
-- Domain name must be "AnonLP"
+- Domain name must be "GhostRoute"
 - Domain version must be "1"
 - Domain chainId must match current network
 - Message statement must be exactly: "Access and recover my privacy vault notes."
@@ -89,7 +89,7 @@ Pending -> Processing -> Completed
 
 ```typescript
 type EIP712Domain = {
-  name: 'AnonLP'
+  name: 'GhostRoute'
   version: '1'
   chainId: 11155111
   verifyingContract: `0x${string}`

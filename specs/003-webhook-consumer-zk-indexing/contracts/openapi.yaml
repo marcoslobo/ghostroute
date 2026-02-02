@@ -4,8 +4,8 @@ info:
   description: Off-chain webhook consumer for processing ZK-related events and serving Merkle proofs
   version: 1.0.0
   contact:
-    name: AnonLP Team
-    url: https://anonlp.io
+    name: GhostRoute Team
+    url: https://ghostroute.io
 
 servers:
   - url: https://{project}.supabase.co/functions/v1

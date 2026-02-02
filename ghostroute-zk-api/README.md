@@ -1,4 +1,4 @@
-# Anonex ZK API
+# GhostRoute ZK API
 
 Off-chain webhook consumer for ZK indexing with Supabase Edge Functions.
 
@@ -21,7 +21,7 @@ Off-chain webhook consumer for ZK indexing with Supabase Edge Functions.
 ## Project Structure
 
 ```
-anonex-zk-api/
+ghostroute-zk-api/
 ├── supabase/
 │   ├── config.toml              # Supabase configuration
 │   ├── functions/
@@ -146,7 +146,7 @@ supabase --version
 
 ```bash
 # Navigate to project root
-cd anonex-zk-api
+cd ghostroute-zk-api
 
 # Verify Deno can run
 deno run --help
@@ -221,7 +221,7 @@ supabase functions serve --env-file .env.local
 **Test Deno is working:**
 
 ```bash
-cd anonex-zk-api
+cd ghostroute-zk-api
 deno run -A -e "console.log('Deno is working!')"
 ```
 

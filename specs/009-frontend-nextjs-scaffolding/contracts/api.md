@@ -78,7 +78,7 @@
 **EIP-712 Data**:
 ```typescript
 const EIP712_DOMAIN = {
-  name: 'AnonLP',
+  name: 'GhostRoute',
   version: '1',
   chainId: 11155111,
   verifyingContract: '0x0000000000000000000000000000000000000000'

@@ -1,5 +1,5 @@
 {
-  "name": "anonex",
+  "name": "ghostroute",
   "version": "1.0.0",
   "description": "Privacy-preserving DeFi protocol with ZK proofs",
   "scripts": {
@@ -7,9 +7,9 @@
     "test": "forge test",
     "test-gas": "forge test --gas-report",
     "test-coverage": "forge coverage",
-    "lint": "solhint anonex-contracts/**/*.sol",
-    "format": "prettier --write anonex-contracts/**/*.sol tests/**/*.sol",
-    "format-check": "prettier --check anonex-contracts/**/*.sol tests/**/*.sol",
+    "lint": "solhint ghostroute-contracts/**/*.sol",
+    "format": "prettier --write ghostroute-contracts/**/*.sol tests/**/*.sol",
+    "format-check": "prettier --check ghostroute-contracts/**/*.sol tests/**/*.sol",
     "clean": "forge clean"
   },
   "devDependencies": {

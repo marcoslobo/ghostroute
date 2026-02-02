@@ -14,7 +14,7 @@ export default function Home() {
       <div style={{ maxWidth: '64rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white' }}>AnonLP Privacy Vault</h1>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white' }}>GhostRoute Privacy Vault</h1>
             <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.8)', marginTop: '0.5rem' }}>
               Zero-knowledge proof infrastructure for private DeFi interactions
             </p>

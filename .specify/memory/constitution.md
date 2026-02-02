@@ -8,7 +8,7 @@ Templates requiring updates: ⚠ pending (plan-template.md, spec-template.md, ta
 Follow-up TODOs: None - all placeholders filled
 -->
 
-# AnonLP Constitution
+# GhostRoute Constitution
 
 ## Core Principles
 

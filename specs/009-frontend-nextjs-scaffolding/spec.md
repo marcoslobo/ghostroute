@@ -30,7 +30,7 @@ Initialize a new Next.js application in the apps/web directory from scratch. Thi
 
 - Implement a usePrivacyIdentity hook
 - Define an EIP-712 Domain and Message:
-  - Domain: name: "AnonLP", version: "1", chainId: 11155111
+  - Domain: name: "GhostRoute", version: "1", chainId: 11155111
   - Message: "Access and recover my privacy vault notes."
 - Derive the Master Secret using the signature hash as a seed for HKDF (Hashed Message Authentication Code-based Key Derivation Function)
 

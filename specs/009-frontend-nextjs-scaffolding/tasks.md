@@ -56,8 +56,8 @@ Phase 2 (Foundational)
 - [X] T004 [P] Create .eslintrc.json with TypeScript ESLint rules and Prettier integration
 - [X] T005 [P] Create .prettierrc with consistent code formatting rules for the project
 - [X] T006 Create .env.local.example with all required environment variables (INFURA_API_KEY, ALCHEMY_API_KEY, WALLET_CONNECT_PROJECT_ID, PRIVACY_VAULT_ADDRESS)
-- [X] T007 [P] Create apps/anonex-ui/public/circuits/ directory for Noir circuit artifacts
-- [X] T008 [P] Create apps/anonex-ui/public/wasm/ directory for Barretenberg Wasm binaries
+- [X] T007 [P] Create apps/ghostroute-ui/public/circuits/ directory for Noir circuit artifacts
+- [X] T008 [P] Create apps/ghostroute-ui/public/wasm/ directory for Barretenberg Wasm binaries
 
 **Phase 1 Dependencies**: None
 
@@ -73,11 +73,11 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [X] T009 Create apps/anonex-ui/package.json with all required dependencies (wagmi, viem, @rainbow-me/rainbowkit, @noir-lang/noirc_vm, @noir-lang/barretenberg, tailwindcss, typescript, etc.)
-- [X] T010 [P] Create apps/anonex-ui/src/lib/wagmi.ts with Wagmi configuration including multi-transport RPC setup (Infura + Alchemy + public RPC for Sepolia chainId 11155111)
-- [X] T011 [P] Create apps/anonex-ui/src/lib/eip712.ts with EIP-712 domain definition (name: "AnonLP", version: "1", chainId: 11155111) and message types for privacy identity
-- [X] T012 [P] Create apps/anonex-ui/src/lib/hkdf.ts with HKDF-SHA256 implementation for deriving Master Secret from signature hash
-- [X] T014 [P] Create apps/anonex-ui/tsconfig.json paths configuration for @/* aliases to src/* paths
+- [X] T009 Create apps/ghostroute-ui/package.json with all required dependencies (wagmi, viem, @rainbow-me/rainbowkit, @noir-lang/noirc_vm, @noir-lang/barretenberg, tailwindcss, typescript, etc.)
+- [X] T010 [P] Create apps/ghostroute-ui/src/lib/wagmi.ts with Wagmi configuration including multi-transport RPC setup (Infura + Alchemy + public RPC for Sepolia chainId 11155111)
+- [X] T011 [P] Create apps/ghostroute-ui/src/lib/eip712.ts with EIP-712 domain definition (name: "GhostRoute", version: "1", chainId: 11155111) and message types for privacy identity
+- [X] T012 [P] Create apps/ghostroute-ui/src/lib/hkdf.ts with HKDF-SHA256 implementation for deriving Master Secret from signature hash
+- [X] T014 [P] Create apps/ghostroute-ui/tsconfig.json paths configuration for @/* aliases to src/* paths
 
 **Phase 2 Dependencies**: Phase 1 complete
 
@@ -93,12 +93,12 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [X] T015 Create apps/anonex-ui/src/app/layout.tsx with RootLayout component including providers wrapper for Wagmi and RainbowKit
-- [X] T016 Create apps/anonex-ui/src/app/page.tsx with Home page component showing connection status and identity derivation UI
-- [X] T017 Create apps/anonex-ui/src/components/ui/Button.tsx with accessible button component using Tailwind CSS
-- [X] T018 [P] Create apps/anonex-ui/src/components/ui/Card.tsx with card component for grouping related content
-- [X] T019 [P] Create apps/anonex-ui/src/components/ui/Input.tsx with accessible input component for forms
-- [X] T020 Create apps/anonex-ui/src/components/Providers.tsx with WagmiProvider and RainbowKitProvider wrappers for app layout
+- [X] T015 Create apps/ghostroute-ui/src/app/layout.tsx with RootLayout component including providers wrapper for Wagmi and RainbowKit
+- [X] T016 Create apps/ghostroute-ui/src/app/page.tsx with Home page component showing connection status and identity derivation UI
+- [X] T017 Create apps/ghostroute-ui/src/components/ui/Button.tsx with accessible button component using Tailwind CSS
+- [X] T018 [P] Create apps/ghostroute-ui/src/components/ui/Card.tsx with card component for grouping related content
+- [X] T019 [P] Create apps/ghostroute-ui/src/components/ui/Input.tsx with accessible input component for forms
+- [X] T020 Create apps/ghostroute-ui/src/components/Providers.tsx with WagmiProvider and RainbowKitProvider wrappers for app layout
 
 **Phase 3 Dependencies**: Phase 2 complete (uses wagmi.ts, eip712.ts, hkdf.ts)
 
@@ -114,11 +114,11 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [X] T021 Create apps/anonex-ui/src/hooks/useWallet.ts with useWallet hook exposing connect, disconnect, isConnected, address, chainId state
-- [X] T022 Create apps/anonex-ui/src/components/wallet/WalletButton.tsx with Connect/Disconnect button using RainbowKit's useConnectModal hook
-- [X] T023 Create apps/anonex-ui/src/components/wallet/WalletStatus.tsx with component displaying current connection status, address, and chain information
-- [X] T024 [P] Create apps/anonex-ui/src/components/wallet/NetworkSelector.tsx with network switcher component for Sepolia/Mainnet
-- [X] T025 Update apps/anonex-ui/src/app/page.tsx to include WalletButton and WalletStatus components
+- [X] T021 Create apps/ghostroute-ui/src/hooks/useWallet.ts with useWallet hook exposing connect, disconnect, isConnected, address, chainId state
+- [X] T022 Create apps/ghostroute-ui/src/components/wallet/WalletButton.tsx with Connect/Disconnect button using RainbowKit's useConnectModal hook
+- [X] T023 Create apps/ghostroute-ui/src/components/wallet/WalletStatus.tsx with component displaying current connection status, address, and chain information
+- [X] T024 [P] Create apps/ghostroute-ui/src/components/wallet/NetworkSelector.tsx with network switcher component for Sepolia/Mainnet
+- [X] T025 Update apps/ghostroute-ui/src/app/page.tsx to include WalletButton and WalletStatus components
 
 **Phase 4 Dependencies**: Phase 3 complete (uses UI components, Providers)
 
@@ -134,12 +134,12 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [X] T026 Create apps/anonex-ui/src/hooks/usePrivacyIdentity.ts with usePrivacyIdentity hook exposing deriveIdentity, isAuthenticated, masterSecret, signatureHash state
+- [X] T026 Create apps/ghostroute-ui/src/hooks/usePrivacyIdentity.ts with usePrivacyIdentity hook exposing deriveIdentity, isAuthenticated, masterSecret, signatureHash state
 - [X] T027 [P] Implement signTypedData call in usePrivacyIdentity using Viem's signTypedData with EIP-712 domain and PrivacyIdentity message type
 - [X] T028 [P] Implement HKDF derivation in usePrivacyIdentity using lib/hkdf.ts to generate 32-byte Master Secret from signature hash
-- [X] T029 Create apps/anonex-ui/src/components/privacy/IdentitySection.tsx with UI for requesting EIP-712 signature and displaying Master Secret
-- [X] T030 Create apps/anonex-ui/src/components/privacy/SignatureDisplay.tsx with component to display signature hash and derived secret (dev mode only)
-- [X] T031 Update apps/anonex-ui/src/app/page.tsx to include IdentitySection component
+- [X] T029 Create apps/ghostroute-ui/src/components/privacy/IdentitySection.tsx with UI for requesting EIP-712 signature and displaying Master Secret
+- [X] T030 Create apps/ghostroute-ui/src/components/privacy/SignatureDisplay.tsx with component to display signature hash and derived secret (dev mode only)
+- [X] T031 Update apps/ghostroute-ui/src/app/page.tsx to include IdentitySection component
 - [X] T032 Log Master Secret to console in usePrivacyIdentity hook for dev verification per success criteria
 
 **Phase 5 Dependencies**: Phase 4 complete (requires connected wallet address)
@@ -156,12 +156,12 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T033 Create apps/anonex-ui/src/workers/noir-prover.worker.ts with Noir Prover Web Worker template for loading Barretenberg Wasm and executing proofs
-- [ ] T034 Create apps/anonex-ui/src/hooks/useProver.ts with useProver hook exposing submitJob, getJobStatus, startWorker, isProcessing state
-- [ ] T035 [P] Create apps/anonex-ui/src/components/privacy/ProverStatus.tsx with UI displaying worker status and proof job progress
-- [ ] T036 [P] Create apps/anonex-ui/src/services/prover.ts with prover service for managing Web Worker lifecycle and job queue
-- [ ] T037 Update apps/anonex-ui/next.config.js to ensure proper Web Worker bundling and SharedArrayBuffer headers
-- [ ] T038 Create apps/anonex-ui/public/.gitkeep placeholder files in circuits/ and wasm/ directories for future artifact placement
+- [ ] T033 Create apps/ghostroute-ui/src/workers/noir-prover.worker.ts with Noir Prover Web Worker template for loading Barretenberg Wasm and executing proofs
+- [ ] T034 Create apps/ghostroute-ui/src/hooks/useProver.ts with useProver hook exposing submitJob, getJobStatus, startWorker, isProcessing state
+- [ ] T035 [P] Create apps/ghostroute-ui/src/components/privacy/ProverStatus.tsx with UI displaying worker status and proof job progress
+- [ ] T036 [P] Create apps/ghostroute-ui/src/services/prover.ts with prover service for managing Web Worker lifecycle and job queue
+- [ ] T037 Update apps/ghostroute-ui/next.config.js to ensure proper Web Worker bundling and SharedArrayBuffer headers
+- [ ] T038 Create apps/ghostroute-ui/public/.gitkeep placeholder files in circuits/ and wasm/ directories for future artifact placement
 
 **Phase 6 Dependencies**: Phase 3 complete (independent of wallet/identity)
 
@@ -175,13 +175,13 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T039 Create apps/anonex-ui/src/lib/utils.ts with helper functions (address formatting, error handling, validation)
+- [ ] T039 Create apps/ghostroute-ui/src/lib/utils.ts with helper functions (address formatting, error handling, validation)
 - [ ] T040 [P] Add error boundaries and loading states to all components
-- [ ] T041 [P] Create apps/anonex-ui/src/app/globals.css with Tailwind directives and custom CSS variables
-- [ ] T042 Create apps/anonex-ui/.env.local template with placeholder values and documentation comments
-- [ ] T043 Create apps/anonex-ui/README.md with setup instructions, environment variable documentation, and testing commands
+- [ ] T041 [P] Create apps/ghostroute-ui/src/app/globals.css with Tailwind directives and custom CSS variables
+- [ ] T042 Create apps/ghostroute-ui/.env.local template with placeholder values and documentation comments
+- [ ] T043 Create apps/ghostroute-ui/README.md with setup instructions, environment variable documentation, and testing commands
 - [ ] T044 [P] Add type exports to all lib/ files for better IDE support
-- [ ] T045 [P] Create apps/anonex-ui/tests/unit/lib/hkdf.test.ts with unit tests for HKDF derivation function
+- [ ] T045 [P] Create apps/ghostroute-ui/tests/unit/lib/hkdf.test.ts with unit tests for HKDF derivation function
 
 **Phase 7 Dependencies**: All previous phases complete
 

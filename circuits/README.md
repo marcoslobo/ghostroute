@@ -1,4 +1,4 @@
-# AnonLP Privacy Circuit - Implementation Summary
+# GhostRoute Privacy Circuit - Implementation Summary
 
 ## Overview
 This Noir circuit implements the core ZK logic for the PrivacyVault, enabling users to prove note ownership and authorize Uniswap v4 actions without revealing their identity.
@@ -52,7 +52,7 @@ To generate the Verifier.sol contract for the PrivacyVault:
 nargo compile
 
 # 2. Generate verification key
-bb write_vk -b ./target/anonex_privacy_circuit.json -o ./target --oracle_hash keccak
+bb write_vk -b ./target/ghostroute_privacy_circuit.json -o ./target --oracle_hash keccak
 
 # 3. Generate Solidity verifier contract
 bb write_solidity_verifier -k ./target/vk -o ./target/Verifier.sol
@@ -60,7 +60,7 @@ bb write_solidity_verifier -k ./target/vk -o ./target/Verifier.sol
 
 ### Contract Integration
 The generated Verifier.sol should be:
-1. Copied to `anonex-contracts/verifiers/Verifier.sol`
+1. Copied to `ghostroute-contracts/verifiers/Verifier.sol`
 2. Imported by the PrivacyVault contract
 3. Used to verify proofs before processing withdrawals
 
@@ -83,5 +83,5 @@ When calling the verifier from Solidity, public inputs must be in this order:
 
 - `src/main.nr` - Main circuit implementation
 - `Nargo.toml` - Package configuration
-- `target/anonex_privacy_circuit.json` - Compiled ACIR circuit
+- `target/ghostroute_privacy_circuit.json` - Compiled ACIR circuit
 - `target/Verifier.sol` - Solidity verifier (to be generated with bb)
