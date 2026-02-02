@@ -51,7 +51,9 @@ docs/_build/
 deno/
 .cache/deno/
 .deps/
-*/
 
 # Supabase
 .supabase/
+
+/.next/
+anonex-ui/.next/
