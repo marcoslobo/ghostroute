@@ -1,26 +1,164 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  .ghost-theme {
+    /* Dark theme - Security & Mystery */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Cyan accent - Tech & Trust */
+    --primary: 187 85% 53%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 47% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 187 85% 53%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 47% 18%;
+    --input: 222 47% 15%;
+    --ring: 187 85% 53%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --ghost-cyan: 187 85% 53%;
+    --ghost-cyan-glow: 187 85% 63%;
+    --ghost-dark: 222 47% 4%;
+    --ghost-card: 222 47% 10%;
+    --ghost-border: 222 47% 20%;
+
+    /* Gradients */
+    --gradient-ghost: linear-gradient(135deg, hsl(187 85% 53% / 0.2), hsl(220 80% 50% / 0.1));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 12%), hsl(222 47% 8%));
+    --gradient-hero: radial-gradient(ellipse at 50% 0%, hsl(187 85% 53% / 0.15), transparent 60%);
+    --gradient-text: linear-gradient(135deg, hsl(187 85% 53%), hsl(187 85% 70%));
+
+    /* Shadows */
+    --shadow-glow: 0 0 60px hsl(187 85% 53% / 0.3);
+    --shadow-card: 0 4px 24px hsl(222 47% 4% / 0.5);
+    --shadow-button: 0 0 30px hsl(187 85% 53% / 0.4);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    background: hsl(var(--ghost-card) / 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--ghost-border) / 0.5);
+  }
+
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 40px hsl(var(--ghost-cyan) / 0.5);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out forwards;
+  }
+
+  .grid-pattern {
+    background-image:
+      linear-gradient(hsl(var(--ghost-border) / 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--ghost-border) / 0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+}
+
+@keyframes float {
+
+  0%, 100% { transform: translateY(0); }
+
+  50% { transform: translateY(-13px); }
+
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
