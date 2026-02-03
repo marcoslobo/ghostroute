@@ -1,0 +1,23 @@
+<svg width="280" height="50" viewBox="0 0 280 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#5eead4"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Ghost Icon -->
+  <g transform="translate(0, 0) scale(0.5)">
+    <path
+      d="M50 10C30 10 15 28 15 50V85L25 75L35 85L45 75L55 85L65 75L75 85L85 75V50C85 28 70 10 50 10Z"
+      stroke="url(#logoGradient)"
+      stroke-width="3"
+      fill="none"
+    />
+    <circle cx="38" cy="42" r="6" fill="url(#logoGradient)"/>
+    <circle cx="62" cy="42" r="6" fill="url(#logoGradient)"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="60" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="url(#logoGradient)">GhostRoute</text>
+</svg>
