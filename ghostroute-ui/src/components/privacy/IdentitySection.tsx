@@ -2,7 +2,8 @@
 
 import { usePrivacyIdentity } from '@/hooks/usePrivacyIdentity';
 import { useWallet } from '@/hooks/useWallet';
-import { CheckCircle, XCircle } from 'lucide-react'; // Import icons for status
+import { CheckCircle, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function IdentitySection() {
   const { isConnected } = useWallet();
@@ -12,8 +13,13 @@ export function IdentitySection() {
     isDeriving,
     error,
   } = usePrivacyIdentity();
+  const [isClient, setIsClient] = useState(false);
 
-  if (!isConnected) {
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient || !isConnected) {
     return null;
   }
 

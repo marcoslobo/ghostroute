@@ -1,10 +1,20 @@
 'use client';
 
 import { useWallet } from '@/hooks/useWallet';
-import { CheckCircle, XCircle } from 'lucide-react'; // Import icons for status
+import { CheckCircle, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function WalletStatus() {
   const { isConnected, address, chainId, isConnecting, error } = useWallet();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null;
+  }
 
   if (isConnecting) {
     return (

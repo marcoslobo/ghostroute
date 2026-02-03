@@ -2,6 +2,7 @@
 
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from '@/components/ui/Button';
+import { useEffect, useState } from 'react';
 
 const SUPPORTED_CHAINS = [
   { id: 11155111, name: 'Sepolia' },
@@ -10,8 +11,15 @@ const SUPPORTED_CHAINS = [
 
 export function NetworkSelector() {
   const { chainId, switchChain, isConnected } = useWallet();
+  const [isClient, setIsClient] = useState(false);
 
-  if (!isConnected) return null;
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient || !isConnected) {
+    return null;
+  }
 
   return (
     <div style={{ display: 'flex', gap: '0.5rem' }}>
