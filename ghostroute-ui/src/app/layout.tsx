@@ -1,22 +1,25 @@
 import '@rainbow-me/rainbowkit/styles.css';
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
 });
 
 export const metadata: Metadata = {
-  title: "GhostRoute - Privacy Vault",
-  description: "Zero-knowledge privacy vault for DeFi interactions",
+  title: "GhostRoute | Anonymous DeFi",
+  description: "Your gateway to private, untraceable transactions on the decentralized web.",
+  icons: {
+    icon: '/ghost-icon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -25,14 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        style={{
-          margin: 0,
-          padding: 0,
-          minHeight: '100vh',
-        }}
-      >
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body className="ghost-theme">
         <Providers>
           {children}
         </Providers>

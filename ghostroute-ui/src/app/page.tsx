@@ -1,122 +1,96 @@
 'use client';
 
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import Image from 'next/image';
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { WalletStatus } from "@/components/wallet/WalletStatus";
 import { NetworkSelector } from "@/components/wallet/NetworkSelector";
 import { IdentitySection } from "@/components/privacy/IdentitySection";
 import { SignatureDisplay } from "@/components/privacy/SignatureDisplay";
+import { CheckCircle } from 'lucide-react';
 
 export default function Home() {
   return (
-    <main style={{ minHeight: '100vh', padding: '2rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-      <div style={{ maxWidth: '64rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white' }}>GhostRoute Privacy Vault</h1>
-            <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.8)', marginTop: '0.5rem' }}>
-              Zero-knowledge proof infrastructure for private DeFi interactions
-            </p>
+    <main className="min-h-screen w-full bg-ghost-dark text-foreground grid-pattern relative overflow-x-hidden">
+      {/* Hero Gradient */}
+      <div className="absolute inset-x-0 top-0 h-[500px] w-full bg-gradient-hero opacity-50" />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <header className="flex justify-between items-center mb-12 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <Image src="/ghost-icon.svg" alt="GhostRoute Logo" width={40} height={40} className="animate-float" />
+            <Image src="/ghostroute-text.svg" alt="GhostRoute" width={150} height={40} />
           </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="flex gap-4 items-center">
             <NetworkSelector />
             <WalletButton />
           </div>
         </header>
 
+        <div className="text-center my-20 animate-slide-up">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-gradient mb-4 glow-text">
+            Your Gateway to Private DeFi
+          </h1>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+            GhostRoute empowers you with untraceable, secure, and private transactions on the decentralized web using advanced zero-knowledge technology.
+          </p>
+        </div>
+
         <WalletStatus />
 
-        <IdentitySection />
-        <SignatureDisplay />
+        <div className="max-w-4xl mx-auto">
+          <IdentitySection />
+          <SignatureDisplay />
+        </div>
 
-        <div style={{ 
-          background: 'white', 
-          borderRadius: '1rem', 
-          padding: '1.5rem', 
-          boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-          marginTop: '2rem'
-        }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Getting Started</h2>
-          <p style={{ color: '#4b5563', marginBottom: '1.5rem' }}>
-            Connect your wallet to access the privacy vault features.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ 
-                width: '1.5rem', 
-                height: '1.5rem', 
-                background: '#3b82f6', 
-                color: 'white', 
-                borderRadius: '9999px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}>1</span>
-              <span style={{ color: '#4b5563' }}>Connect your wallet</span>
+        {/* Getting Started Section */}
+        <div className="glass rounded-2xl p-8 my-16 border-2 border-ghost-border/50 shadow-card animate-fade-in">
+          <h2 className="text-3xl font-display font-bold text-center mb-2 text-gradient">How It Works</h2>
+          <p className="text-center text-muted-foreground mb-10">Three simple steps to achieve on-chain privacy.</p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ghost-card border border-ghost-border/50 mb-4 glow">
+                <span className="font-display text-2xl text-cyan-400">1</span>
+              </div>
+              <h3 className="font-bold text-lg">Connect Wallet</h3>
+              <p className="text-sm text-muted-foreground">Link your preferred Web3 wallet to begin.</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ 
-                width: '1.5rem', 
-                height: '1.5rem', 
-                background: '#3b82f6', 
-                color: 'white', 
-                borderRadius: '9999px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}>2</span>
-              <span style={{ color: '#4b5563' }}>Sign EIP-712 message</span>
+            <div className="h-0.5 w-1/4 bg-ghost-border/30 hidden md:block"></div>
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ghost-card border border-ghost-border/50 mb-4 glow">
+                <span className="font-display text-2xl text-cyan-400">2</span>
+              </div>
+              <h3 className="font-bold text-lg">Create Identity</h3>
+              <p className="text-sm text-muted-foreground">Sign a message to generate your private identity.</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ 
-                width: '1.5rem', 
-                height: '1.5rem', 
-                background: '#3b82f6', 
-                color: 'white', 
-                borderRadius: '9999px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}>3</span>
-              <span style={{ color: '#4b5563' }}>Generate ZK proofs</span>
+            <div className="h-0.5 w-1/4 bg-ghost-border/30 hidden md:block"></div>
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ghost-card border border-ghost-border/50 mb-4 glow">
+                <span className="font-display text-2xl text-cyan-400">3</span>
+              </div>
+              <h3 className="font-bold text-lg">Transact Privately</h3>
+              <p className="text-sm text-muted-foreground">Use your new identity for anonymous operations.</p>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-          <div style={{ 
-            background: 'white', 
-            borderRadius: '1rem', 
-            padding: '1.5rem', 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem' }}>Privacy Features</h3>
-            <ul style={{ color: '#4b5563', listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.5rem' }}>• EIP-712 identity derivation</li>
-              <li style={{ marginBottom: '0.5rem' }}>• HKDF-based master secret</li>
-              <li style={{ marginBottom: '0.5rem' }}>• Zero-knowledge proofs</li>
-              <li>• Client-side crypto</li>
+        {/* Features Section */}
+        <div className="grid md:grid-cols-2 gap-8 my-16">
+          <div className="glass rounded-2xl p-8 border-2 border-ghost-border/50 shadow-card">
+            <h3 className="text-2xl font-display font-bold mb-4 text-gradient">Core Privacy Features</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>EIP-712 derived cryptographic identity</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>HKDF-based master secret for key generation</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>Zero-Knowledge proofs for ultimate privacy</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>All cryptography is handled client-side</span></li>
             </ul>
           </div>
-          <div style={{ 
-            background: 'white', 
-            borderRadius: '1rem', 
-            padding: '1.5rem', 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem' }}>Networks</h3>
-            <ul style={{ color: '#4b5563', listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.5rem' }}>• Sepolia Testnet</li>
-              <li style={{ marginBottom: '0.5rem' }}>• Ethereum Mainnet</li>
-              <li style={{ marginBottom: '0.5rem' }}>• Multi-transport RPC</li>
-              <li>• Auto-failover</li>
+          <div className="glass rounded-2xl p-8 border-2 border-ghost-border/50 shadow-card">
+            <h3 className="text-2xl font-display font-bold mb-4 text-gradient">Robust & Resilient</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>Support for Sepolia Testnet & Ethereum Mainnet</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>Multi-transport RPC for reliable connections</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>Automatic failover for uninterrupted service</span></li>
+              <li className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-cyan-400" /><span>Designed for security and decentralization</span></li>
             </ul>
           </div>
         </div>
