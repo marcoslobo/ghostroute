@@ -1,0 +1,9 @@
+{
+  "verifier": "0x2F669A07A17E664D2168b9CD5e8EF6AB5dcFe70d",
+  "vault": "0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4",
+  "hook": null,
+  "timestamp": 1738675200,
+  "chainId": 11155111,
+  "network": "Sepolia",
+  "note": "Hook deployment skipped - requires HookMiner for permission bits"
+}

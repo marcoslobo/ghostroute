@@ -2,7 +2,12 @@
   "tasks": {
     "start": "deno run -A --watch=supabase/functions/ supabase/functions/webhook/index.ts",
     "test": "deno test --allow-all tests/",
-    "check": "deno fmt && deno lint"
+    "test:unit": "deno test --no-check --allow-all tests/unit/",
+    "test:integration": "deno test --no-check --allow-all tests/integration/",
+    "check": "deno fmt && deno lint",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "run:server": "deno run --allow-all src/services/webhook-server.ts"
   },
   "compilerOptions": {
     "lib": ["deno.window"],

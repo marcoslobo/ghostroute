@@ -42,10 +42,19 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
         bytes32 indexed changeCommitment,
         bytes32 indexed actionHash,
         uint256 investAmount,
-        uint256 timestamp
+        uint256 timestamp,
+        uint256 changeIndex
     );
     
     event VerifierUpdated(address indexed newVerifier);
+
+    event AnonymousWithdrawal(
+    bytes32 indexed nullifier,
+    address indexed recipient,
+    uint256 amount,
+    bytes32 changeCommitment,
+    uint256 changeIndex
+    );
     
     // ========================================================================
     // MODIFIERS
@@ -65,6 +74,113 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
         verifier = IZKVerifier(_verifier);
         currentRoot = bytes32(0);
     }
+    
+    receive() external payable {
+        // Accept ETH deposits
+    }
+    
+    // ========================================================================
+    // SIMPLIFIED FUNCTIONS - FOR TESTING
+    // ========================================================================
+    
+    /// @notice Simplified deposit (for testing without Permit2)
+    /// @param commitment H(nullifier, amount, salt)
+    /// @param nullifier Unique identifier preventing double-spend
+    /// @return leafIndex Position in Merkle tree
+    function deposit(
+        bytes32 commitment,
+        bytes32 nullifier
+    ) external payable nonReentrant returns (uint256 leafIndex) {
+        require(msg.value > 0, "Must send ETH");
+        require(commitment != bytes32(0), "Invalid commitment");
+        require(!nullifiers[nullifier], "Nullifier already used");
+        require(nextLeafIndex < 1048576, "Tree at capacity");
+        
+        // Update state
+        nullifiers[nullifier] = true;
+        commitments[commitment] = true;
+        leafIndex = nextLeafIndex;
+        nextLeafIndex++;
+        
+        // Update Merkle root
+        bytes32 oldRoot = currentRoot;
+        currentRoot = keccak256(abi.encodePacked(currentRoot, commitment));
+        
+        // Emit event
+        emit PrivacyVaultEvents.Deposit(
+            commitment,
+            nullifier,
+            ETH_ADDRESS,
+            msg.value,
+            leafIndex,
+            currentRoot
+        );
+        
+        emit PrivacyVaultEvents.MerkleRootUpdated(
+            oldRoot,
+            currentRoot,
+            nextLeafIndex
+        );
+        
+        return leafIndex;
+    }
+    
+    /// @notice Withdraw ETH to recipient (simplified, for testing)
+    /// @param amount Amount to withdraw
+    /// @param recipient Address to receive ETH
+function withdraw(
+    bytes calldata proof,
+    bytes32 root,
+    bytes32 nullifierHash,
+    bytes32 changeCommitment,
+    address payable recipient,
+    uint256 amount
+) external nonReentrant {
+
+    // Adicione no início da função withdraw
+    require(amount > 0, "Invalid amount");
+    require(address(this).balance >= amount, "Vault: Insufficient balance");
+    
+    // 1. Reconstroi o actionHash (o circuito Noir deve gerar o mesmo hash)
+    bytes32 actionHash = keccak256(abi.encodePacked(recipient, amount));
+
+    // 2. Prepara os inputs públicos para o Verificador
+    bytes32[] memory publicInputs = new bytes32[](5);
+    publicInputs[0] = root;
+    publicInputs[1] = nullifierHash;
+    publicInputs[2] = changeCommitment;
+    publicInputs[3] = actionHash;
+    publicInputs[4] = bytes32(amount);
+
+    // 3. Valida a prova ZK
+    require(verifier.verify(proof, publicInputs), "ZK proof verification failed");
+    require(!nullifiers[nullifierHash], "Nullifier already spent");
+    require(root == currentRoot, "Invalid Merkle root");
+
+    // 4. Efeitos de Estado (UTXO Change)
+    nullifiers[nullifierHash] = true;
+    commitments[changeCommitment] = true;
+    uint256 changeIndex = nextLeafIndex;
+    
+    bytes32 oldRoot = currentRoot;
+    currentRoot = keccak256(abi.encodePacked(currentRoot, changeCommitment));
+    nextLeafIndex++;
+
+    // 5. Interação: Envio dos fundos
+    (bool success, ) = recipient.call{value: amount}("");
+    require(success, "Transfer failed");
+
+    // 6. Log para o seu Listener
+    emit AnonymousWithdrawal(
+        nullifierHash,
+        recipient,
+        amount,
+        changeCommitment,
+        changeIndex
+    );
+
+    emit PrivacyVaultEvents.MerkleRootUpdated(oldRoot, currentRoot, nextLeafIndex);
+}
     
     // ========================================================================
     // CORE FUNCTIONS - DEPOSIT
@@ -117,8 +233,9 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
         nextLeafIndex++;
         
         // Update Merkle root (simplified for testing)
+        bytes32 oldRoot = currentRoot;
         currentRoot = keccak256(abi.encodePacked(currentRoot, commitment));
-        
+
         // Emit events
         emit PrivacyVaultEvents.Deposit(
             commitment,
@@ -128,9 +245,9 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
             leafIndex,
             currentRoot
         );
-        
+
         emit PrivacyVaultEvents.MerkleRootUpdated(
-            currentRoot,
+            oldRoot,
             currentRoot,
             nextLeafIndex
         );
@@ -196,10 +313,10 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
         // Verify actionHash is non-zero (actual parameter binding happens off-chain in ZK circuit)
         // The ZK circuit constrains the actionHash, and we verify it matches here
         require(actionHash != bytes32(0), "Invalid action hash");
-        // Note: Full parameter reconstruction and verification would decode uniswapParams
-        // and verify each field matches the expected action. For this implementation,
-        // we trust the ZK circuit to have properly constrained these values.
-        
+         // Note: Full parameter reconstruction and verification would decode uniswapParams
+         // and verify each field matches the expected action. For this implementation,
+         // we trust the ZK circuit to have properly constrained these values.
+
         // ------------------------------------------------------------------------
         // 5. UPDATE MERKLE TREE WITH CHANGE COMMITMENT
         // ------------------------------------------------------------------------
@@ -208,7 +325,10 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
         require(!commitments[changeCommitment], "Change commitment already exists");
         
         commitments[changeCommitment] = true;
-        
+
+        // Capture the current index for the change note before incrementing
+        uint256 changeIndex = nextLeafIndex;
+
         // Update Merkle root to include the new change commitment
         bytes32 oldRoot = currentRoot;
         currentRoot = keccak256(abi.encodePacked(currentRoot, changeCommitment));
@@ -224,7 +344,8 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
             changeCommitment,
             actionHash,
             investAmount,
-            block.timestamp
+            block.timestamp,
+            changeIndex 
         );
         
         emit PrivacyVaultEvents.MerkleRootUpdated(
