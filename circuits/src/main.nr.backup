@@ -39,15 +39,6 @@ fn compute_nullifier(nullifier_secret: Field) -> Field {
     std::hash::pedersen_hash([nullifier_secret])
 }
 
-/// @notice Compute action hash for binding recipient and amount
-/// @dev Used for withdrawal flow to cryptographically bind recipient to amount
-/// @param recipient The recipient Ethereum address (as Field)
-/// @param amount The amount being withdrawn
-/// @return Field The computed action hash
-fn compute_action_hash(recipient: Field, amount: Field) -> Field {
-    std::hash::pedersen_hash([recipient, amount])
-}
-
 // =============================================================================
 // MERKLE TREE VERIFICATION
 // =============================================================================
@@ -80,16 +71,14 @@ fn verify_merkle_proof(leaf: Field, index: Field, path: [Field; 20]) -> Field {
 // =============================================================================
 
 /// @notice Main circuit for PrivacyVault ZK proof
-/// @dev Proves note ownership and authorizes withdrawal or Uniswap v4 action without revealing identity
+/// @dev Proves note ownership and authorizes Uniswap v4 action without revealing identity
 /// 
 /// # Public Inputs (Verified by Smart Contract):
 /// - root: Merkle tree root from PrivacyVault
 /// - nullifier_hash: Public nullifier to prevent double-spending
 /// - change_commitment: Commitment to the change note
-/// - is_withdrawal: Boolean flag - true for withdrawal, false for investment
-/// - action_hash: Hash binding to action parameters (H(recipient, amount) for withdrawal, H(pool, params) for investment)
-/// - amount: Amount being withdrawn or invested
-/// - recipient: Recipient address for withdrawal (ignored for investment)
+/// - action_hash: Hash binding to Uniswap v4 parameters (anti-tampering)
+/// - invest_amount: Amount being invested in Uniswap
 ///
 /// # Private Inputs (User Secrets):
 /// - note: Original note with all private fields
@@ -102,18 +91,16 @@ fn main(
     // =============================================================================
     root: pub Field,                 // Merkle tree root from PrivacyVault contract
     nullifier_hash: pub Field,       // Public nullifier to invalidate spent note
-    change_commitment: pub Field,   // Commitment to the change note (UTXO)
-    is_withdrawal: pub bool,        // true = withdrawal, false = investment
-    action_hash: pub Field,         // H(recipient, amount) for withdrawal OR H(pool, params) for investment
-    amount: pub Field,              // withdraw_amount or invest_amount
-    recipient: pub Field,           // Recipient address for withdrawal (ignored for investment)
+    change_commitment: pub Field,    // Commitment to the change note (UTXO)
+    action_hash: pub Field,          // Hash of Uniswap v4 parameters (PoolID, TickRange, etc.)
+    invest_amount: pub Field,        // Amount being invested in Uniswap v4
     
     // =============================================================================
     // PRIVATE INPUTS (These remain secret)
     // =============================================================================
     note: Note,                      // Original note with all secrets
     index: Field,                    // Index of note in Merkle tree
-    path: [Field; 20],              // Merkle path (height 20 = 20 levels)
+    path: [Field; 20],               // Merkle path (height 20 = 20 levels)
     change_note: Note,               // Change note (UTXO change output)
 ) {
     // =============================================================================
@@ -135,9 +122,9 @@ fn main(
     // =============================================================================
     // 3. VERIFY UTXO BALANCE EQUATION
     // =============================================================================
-    // Enforce: Input Amount = Amount + Change Amount
+    // Enforce: Input Amount = Investment Amount + Change Amount
     // This ensures no value is created or destroyed
-    assert(note.amount == amount + change_note.amount);
+    assert(note.amount == invest_amount + change_note.amount);
     
     // =============================================================================
     // 4. VERIFY ASSET ID CONSISTENCY
@@ -155,12 +142,14 @@ fn main(
     // =============================================================================
     // 6. ACTION BINDING (Anti-Tampering)
     // =============================================================================
-    // For withdrawals: Verify action_hash = H(recipient, amount)
-    // For investments: Pass through action_hash (verified by contract)
-    if is_withdrawal {
-        let computed_action_hash = compute_action_hash(recipient, amount);
-        assert(action_hash == computed_action_hash);
-    }
+    // The action_hash is passed through to bind the proof to specific Uniswap parameters
+    // This ensures the Relayer cannot modify the transaction once the proof is generated
+    // The contract will verify: action_hash == keccak256(PoolID, TickRange, etc.)
+    // Note: We don't compute action_hash here, just pass it through to prove knowledge
+    // The actual binding happens in the smart contract verification
+    // 
+    // Mark action_hash as used to prevent compiler warning about unused variable
+    let _ = action_hash;
 }
 
 // =============================================================================
@@ -192,17 +181,6 @@ fn test_compute_nullifier() {
 }
 
 #[test]
-fn test_compute_action_hash() {
-    let recipient = 0x1234567890123456789012345678901234567890;
-    let amount = 700;
-    
-    let action_hash = compute_action_hash(recipient, amount);
-    // Action hash should be deterministic
-    let action_hash2 = compute_action_hash(recipient, amount);
-    assert(action_hash == action_hash2);
-}
-
-#[test]
 fn test_utxo_balance() {
     let note = Note {
         asset_id: 1,
@@ -218,10 +196,10 @@ fn test_utxo_balance() {
         blinding: 98765,
     };
     
-    let amount = 700;
+    let invest_amount = 700;
     
     // Verify balance equation
-    assert(note.amount == amount + change_note.amount);
+    assert(note.amount == invest_amount + change_note.amount);
 }
 
 #[test(should_fail)]
@@ -240,83 +218,8 @@ fn test_utxo_balance_failure() {
         blinding: 98765,
     };
     
-    let amount = 700;
+    let invest_amount = 700;
     
     // This should fail: 1000 != 700 + 500
-    assert(note.amount == amount + change_note.amount);
-}
-
-#[test]
-fn test_withdrawal_action_hash_match() {
-    let recipient = 0x1234567890123456789012345678901234567890;
-    let amount = 500;
-    
-    let expected_action_hash = compute_action_hash(recipient, amount);
-    let computed_action_hash = compute_action_hash(recipient, amount);
-    
-    assert(expected_action_hash == computed_action_hash);
-}
-
-#[test(should_fail)]
-fn test_withdrawal_action_hash_mismatch() {
-    let recipient = 0x1234567890123456789012345678901234567890;
-    let amount = 500;
-    let wrong_amount = 600;
-    
-    let expected_action_hash = compute_action_hash(recipient, amount);
-    let wrong_action_hash = compute_action_hash(recipient, wrong_amount);
-    
-    // This should fail: action hashes don't match
-    assert(expected_action_hash == wrong_action_hash);
-}
-
-#[test]
-fn test_full_balance_withdrawal() {
-    let note = Note {
-        asset_id: 1,
-        amount: 1000,
-        nullifier_secret: 12345,
-        blinding: 67890,
-    };
-    
-    // Full withdrawal (no change)
-    let change_note = Note {
-        asset_id: 1,
-        amount: 0,
-        nullifier_secret: 54321,
-        blinding: 98765,
-    };
-    
-    let amount = 1000;
-    
-    // Verify: 1000 = 1000 + 0
-    assert(note.amount == amount + change_note.amount);
-    
-    // Verify action hash for full withdrawal
-    let recipient = 0x1234567890123456789012345678901234567890;
-    let action_hash = compute_action_hash(recipient, amount);
-    assert(action_hash == compute_action_hash(recipient, amount));
-}
-
-#[test(should_fail)]
-fn test_insufficient_balance_withdrawal() {
-    let note = Note {
-        asset_id: 1,
-        amount: 1000,
-        nullifier_secret: 12345,
-        blinding: 67890,
-    };
-    
-    // Trying to withdraw more than available
-    let change_note = Note {
-        asset_id: 1,
-        amount: 100,
-        nullifier_secret: 54321,
-        blinding: 98765,
-    };
-    
-    let amount = 1000;
-    
-    // This should fail: 1000 != 1000 + 100
-    assert(note.amount == amount + change_note.amount);
+    assert(note.amount == invest_amount + change_note.amount);
 }
