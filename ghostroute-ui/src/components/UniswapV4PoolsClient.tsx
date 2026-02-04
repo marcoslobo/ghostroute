@@ -47,7 +47,7 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools }) =>
                 {pool.token0.symbol}/{pool.token1.symbol}
               </td>
               <td className="py-3 px-6 text-left">
-                {pool.feeTier}
+                {parseFloat(pool.feeTier) / 10000}%
               </td>
               <td className="py-3 px-6 text-left">
                 ${formatNumber(pool.totalValueLockedUSD)}
