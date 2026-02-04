@@ -11,6 +11,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-30
 - Supabase PostgreSQL (managed, connection pooling via Supabase) (003-webhook-consumer-zk-indexing)
 - TypeScript 5.x + Next.js 14+ (App Router) + Node.js 20 LTS + Wagmi ^2.x, Viem ^2.x, ConnectKit ^1.x (or RainbowKit ^1.x), @noir-lang/noirc_vm ^0.x (Wasm), @noir-lang/barretenberg ^2.x (Wasm) (009-frontend-nextjs-scaffolding)
 - Client-side only (localStorage for cached identity), /public for static circuit artifacts (009-frontend-nextjs-scaffolding)
+- TypeScript 20.x (Deno Runtime for Edge Functions) + pg (PostgreSQL client), poseidon-lite (hashing), uuid (idempotency) (011-webhook-payload-processor)
 
 - Solidity ^0.8.20 + OpenZeppelin Contracts, Permit2, @zk-kit/lean-imt.sol v2.0+ (001-privacy-vault)
 
@@ -30,9 +31,9 @@ tests/
 Solidity ^0.8.20: Follow standard conventions
 
 ## Recent Changes
+- 011-webhook-payload-processor: Added TypeScript 20.x (Deno Runtime for Edge Functions) + pg (PostgreSQL client), poseidon-lite (hashing), uuid (idempotency)
 - 009-frontend-nextjs-scaffolding: Added TypeScript 5.x + Next.js 14+ (App Router) + Node.js 20 LTS + Wagmi ^2.x, Viem ^2.x, ConnectKit ^1.x (or RainbowKit ^1.x), @noir-lang/noirc_vm ^0.x (Wasm), @noir-lang/barretenberg ^2.x (Wasm)
 - 003-webhook-consumer-zk-indexing: Added mock E2E test script (scripts/mock-e2e-test.ts) for testing without infrastructure
-- 003-webhook-consumer-zk-indexing: Added DeployPrivacyVault.s.sol script for local contract deployment
 
 ## Testing Commands
 

@@ -1,0 +1,323 @@
+openapi: 3.0.3
+info:
+  title: GhostRoute Webhook Processor API
+  description: API for processing EVM listener webhook payloads
+  version: 1.0.0
+  contact:
+    name: GhostRoute Protocol
+    url: https://ghostroute.io
+
+servers:
+  - url: https://api.ghostroute.io/v1
+    description: Production server
+  - url: https://staging-api.ghostroute.io/v1
+    description: Staging server
+
+tags:
+  - name: Webhook
+    description: Webhook event processing endpoints
+  - name: Health
+    description: Health check and monitoring endpoints
+
+paths:
+  /webhook:
+    post:
+      tags:
+        - Webhook
+      summary: Process incoming webhook payload
+      description: |
+        Processes an EVM listener webhook event. Uses idempotency check
+        via TransactionHash + LogIndex to prevent duplicate processing.
+      operationId: processWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+            example:
+              TransactionHash: "0xabc123..."
+              LogIndex: 0
+              ContractAddress: "0xdef456..."
+              BlockchainNetworkId: 1
+              DecodedParametersNames: ["commitment", "leafIndex"]
+              DecodedParametersValues: ["0x...", 5]
+      responses:
+        '200':
+          description: Event processed successfully (or was already processed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingResult'
+        '400':
+          description: Invalid payload structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Event already processed (idempotency)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateEvent'
+        '500':
+          description: Internal processing error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /webhook/batch:
+    post:
+      tags:
+        - Webhook
+      summary: Process multiple webhook payloads
+      description: |
+        Processes multiple webhook events in a single request.
+        Each event is processed independently with idempotency checks.
+      operationId: processWebhookBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WebhookPayload'
+              maxItems: 100
+      responses:
+        '200':
+          description: All events processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchProcessingResult'
+        '207':
+          description: Partial success (some events failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchProcessingResult'
+        '400':
+          description: Invalid batch request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns the health status of the webhook processor
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+components:
+  schemas:
+    WebhookPayload:
+      type: object
+      required:
+        - TransactionHash
+        - LogIndex
+        - ContractAddress
+        - BlockchainNetworkId
+        - DecodedParametersNames
+        - DecodedParametersValues
+      properties:
+        TransactionHash:
+          type: string
+          pattern: '^0x[0-9a-fA-F]{64}$'
+          example: "0xabc123def456..."
+          description: Ethereum transaction hash
+        LogIndex:
+          type: integer
+          minimum: 0
+          example: 0
+          description: Log index within the transaction
+        ContractAddress:
+          type: string
+          pattern: '^0x[0-9a-fA-F]{40}$'
+          example: "0xdef456abc123..."
+          description: Vault contract address
+        BlockchainNetworkId:
+          type: integer
+          minimum: 0
+          example: 1
+          description: Chain identifier
+        DecodedParametersNames:
+          type: array
+          items:
+            type: string
+          example: ["commitment", "leafIndex", "nullifierHash"]
+          description: Array of parameter names
+        DecodedParametersValues:
+          type: array
+          items: {}
+          example: ["0x...", 5, "0x..."]
+          description: Array of corresponding parameter values
+        BlockNumber:
+          type: integer
+          minimum: 0
+          description: Block number where event was emitted
+        BlockHash:
+          type: string
+          pattern: '^0x[0-9a-fA-F]{64}$'
+          description: Block hash for verification
+        EventSignature:
+          type: string
+          pattern: '^0x[0-9a-fA-F]{64}$'
+          description: Event signature hash
+      additionalProperties: true
+
+    DecodedParamsMap:
+      type: object
+      description: Dynamic key-value mapping from decoded parameters
+      additionalProperties: true
+
+    ProcessingResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        idempotent:
+          type: boolean
+          example: false
+          description: True if this was a duplicate request
+        eventType:
+          type: string
+          enum: [Deposit, ActionExecuted, Unknown]
+          example: "Deposit"
+        transactionHash:
+          type: string
+          example: "0xabc123..."
+        logIndex:
+          type: integer
+          example: 0
+        vaultAddress:
+          type: string
+          example: "0xdef456..."
+        chainId:
+          type: integer
+          example: 1
+        merkleUpdate:
+          type: object
+          nullable: true
+          properties:
+            leafIndex:
+              type: integer
+              example: 5
+            commitment:
+              type: string
+              example: "0x..."
+            treeType:
+              type: string
+              enum: [deposit, change]
+              example: "deposit"
+        nullifier:
+          type: object
+          nullable: true
+          properties:
+            nullifierHash:
+              type: string
+              example: "0x..."
+            noteInvalidated:
+              type: boolean
+              example: true
+        processedAt:
+          type: string
+          format: date-time
+          example: "2026-02-04T12:00:00Z"
+
+    DuplicateEvent:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        idempotent:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Event already processed"
+        originalProcessedAt:
+          type: string
+          format: date-time
+          example: "2026-02-04T11:00:00Z"
+
+    BatchProcessingResult:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+        successful:
+          type: integer
+          example: 10
+        failed:
+          type: integer
+          example: 0
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              success:
+                type: boolean
+              index:
+                type: integer
+              error:
+                type: string
+                nullable: true
+              result:
+                $ref: '#/components/schemas/ProcessingResult'
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Invalid payload structure"
+        details:
+          type: string
+          nullable: true
+        code:
+          type: string
+          example: "INVALID_PAYLOAD"
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-02-04T12:00:00Z"
+        version:
+          type: string
+          example: "1.0.0"
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              example: "connected"
+            merkleTree:
+              type: string
+              example: "ready"
