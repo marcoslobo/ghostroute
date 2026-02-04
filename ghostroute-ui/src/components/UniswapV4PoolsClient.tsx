@@ -37,7 +37,6 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools }) =>
             <th className="py-3 px-6 text-left">Fee Tier</th>
             <th className="py-3 px-6 text-left">TVL USD</th>
             <th className="py-3 px-6 text-left">Volume USD</th>
-            <th className="py-3 px-6 text-left">Pool ID</th>
             <th className="py-3 px-6 text-center">Actions</th>
           </tr>
         </thead>
@@ -55,9 +54,6 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools }) =>
               </td>
               <td className="py-3 px-6 text-left">
                 ${formatNumber(pool.volumeUSD)}
-              </td>
-              <td className="py-3 px-6 text-left font-mono text-xs">
-                {pool.id.substring(0, 8)}...
               </td>
               <td className="py-3 px-6 text-center">
                 <a
