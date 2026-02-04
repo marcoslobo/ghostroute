@@ -1,4 +1,4 @@
-'use client';
+// No 'use client' for Server Component
 
 import Image from 'next/image';
 import { WalletButton } from "@/components/wallet/WalletButton";
@@ -7,8 +7,9 @@ import { NetworkSelector } from "@/components/wallet/NetworkSelector";
 import { IdentitySection } from "@/components/privacy/IdentitySection";
 import { SignatureDisplay } from "@/components/privacy/SignatureDisplay";
 import { CheckCircle } from 'lucide-react';
+import { UniswapPoolsSection } from '@/components/UniswapPoolsSection';
 
-export default function Home() {
+export default async function Home() { // Make Home async
   return (
     <main className="min-h-screen w-full bg-ghost-dark text-foreground grid-pattern relative overflow-x-hidden">
       {/* Hero Gradient */}
@@ -71,6 +72,11 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">Use your new identity for anonymous operations.</p>
             </div>
           </div>
+        </div>
+
+        {/* Uniswap Pools Section */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 my-16 relative z-10">
+          <UniswapPoolsSection />
         </div>
 
         {/* Features Section */}
