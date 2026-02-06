@@ -10,7 +10,8 @@ const transports = {
   ]),
   [sepolia.id]: fallback([
     // Removed Infura and Alchemy entries, using only public RPC
-    http('https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'),
+    http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL!),
+    http('https://rpc.sepolia.org'), // Fallback to a public RPC if env var is not set
   ]),
   [unichainSepolia.id]: http('https://sepolia.unichain.org'),
 }

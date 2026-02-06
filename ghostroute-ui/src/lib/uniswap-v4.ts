@@ -42,7 +42,7 @@ export const NETWORK_CONFIG: Record<SupportedChainId, {
     universalRouter: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b',
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     blockExplorer: 'https://sepolia.etherscan.io',
-    rpcUrl: 'https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef',
+    rpcUrl: process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL!,
   },
   // Unichain Sepolia
   1301: {
