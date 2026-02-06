@@ -14,6 +14,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-04
 - TypeScript 20.x (Deno Runtime for Edge Functions) + pg (PostgreSQL client), poseidon-lite (hashing), uuid (idempotency) (011-webhook-payload-processor)
 - Noir 1.0.0-beta.18 (via Nargo) + std::hash (Pedersen, Poseidon), std::merkle (012-circuits-withdrawal-flow)
 - N/A (circuit only) (012-circuits-withdrawal-flow)
+- TypeScript 5.x + Next.js 14+ (App Router) + Node.js 20 LTS + poseidon-lite (hashing), uuid (idempotency), @noir-lang/noirc_vm ^0.x (Wasm), @noir-lang/barretenberg ^2.x (Wasm), Wagmi ^2.x, Viem ^2.x (013-utxo-math-frontend)
 
 - Solidity ^0.8.20 + OpenZeppelin Contracts, Permit2, @zk-kit/lean-imt.sol v2.0+ (001-privacy-vault)
 
@@ -33,9 +34,9 @@ tests/
 Solidity ^0.8.20: Follow standard conventions
 
 ## Recent Changes
+- 013-utxo-math-frontend: Added TypeScript 5.x + Next.js 14+ (App Router) + Node.js 20 LTS + poseidon-lite (hashing), uuid (idempotency), @noir-lang/noirc_vm ^0.x (Wasm), @noir-lang/barretenberg ^2.x (Wasm), Wagmi ^2.x, Viem ^2.x
 - 012-circuits-withdrawal-flow: Added Noir 1.0.0-beta.18 (via Nargo) + std::hash (Pedersen, Poseidon), std::merkle
 - 011-webhook-payload-processor: Added TypeScript 20.x (Deno Runtime for Edge Functions) + pg (PostgreSQL client), poseidon-lite (hashing), uuid (idempotency)
-- 009-frontend-nextjs-scaffolding: Added TypeScript 5.x + Next.js 14+ (App Router) + Node.js 20 LTS + Wagmi ^2.x, Viem ^2.x, ConnectKit ^1.x (or RainbowKit ^1.x), @noir-lang/noirc_vm ^0.x (Wasm), @noir-lang/barretenberg ^2.x (Wasm)
 
 ## Testing Commands
 

@@ -71,7 +71,7 @@ contract NetworkConfig is Script {
         return Info({
             chainId: 11155111,
             name: "Sepolia Testnet",
-            rpcUrl: "https://rpc.sepolia.org",
+            rpcUrl: "https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'",
             poolManager: 0x8CF32B63ca23B8a5a48dA3c319e38E59B4Ca5dA0,
             weth9: 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9,
             multicall: 0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696,

@@ -142,7 +142,7 @@ contract DeployAll is Script {
         // Step 3: Deploy PrivacyLiquidityHook (skip for local if no PoolManager)
         if (networks[chainId].poolManager != address(0)) {
             console.log("[3/3] Deploying PrivacyLiquidityHook...");
-            try {
+            // try {
                 hook = address(new PrivacyLiquidityHook(
                     IPoolManager(networks[chainId].poolManager),
                     vault
@@ -159,10 +159,10 @@ contract DeployAll is Script {
                     console.log("  -> Hook has correct permissions: NO");
                     console.log("    (Use HookMiner to find valid salt for production)");
                 }
-            } catch {
-                console.log("  -> Hook deployment skipped (will deploy separately with HookMiner)");
-                hook = address(0);
-            }
+            // } catch {
+            //     console.log("  -> Hook deployment skipped (will deploy separately with HookMiner)");
+            //     hook = address(0);
+            // }
         } else {
             console.log("[3/3] Skipping PrivacyLiquidityHook (no PoolManager configured)");
             hook = address(0);
