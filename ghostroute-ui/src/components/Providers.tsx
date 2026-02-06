@@ -2,20 +2,13 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider, darkTheme, getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { useState, type ReactNode } from 'react';
+import { config } from '@/lib/wagmi'; // Import the centralized wagmi config
 
 interface ProvidersProps {
   children: ReactNode;
 }
-
-const config = getDefaultConfig({
-  appName: 'GhostRoute Privacy Vault',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo',
-  chains: [mainnet, sepolia],
-  ssr: false,
-});
 
 export function Providers({ children }: ProvidersProps) {
   const [queryClient] = useState(() => new QueryClient());
