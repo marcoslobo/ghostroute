@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { getVaultByChainAndAddress } from '../utils/db.ts';
+import { getVaultByChainAndAddress } from '../_shared/utils/db.ts';
 
 interface MerkleRootRequest {
   vaultId?: string;
@@ -15,11 +15,26 @@ interface MerkleRootResponse {
   updatedAt: string;
 }
 
+// CORS headers for browser requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+};
+
 async function handleRequest(req: Request): Promise<Response> {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+
   if (req.method !== 'GET') {
     return new Response(
       JSON.stringify({ code: 'METHOD_NOT_ALLOWED', message: 'Only GET method is allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -32,21 +47,21 @@ async function handleRequest(req: Request): Promise<Response> {
     if (!chainId) {
       return new Response(
         JSON.stringify({ code: 'INVALID_PARAMS', message: 'chainId is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!vaultId && !vaultAddress) {
       return new Response(
         JSON.stringify({ code: 'INVALID_PARAMS', message: 'vaultId or vaultAddress is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let vault;
 
     if (vaultId) {
-      const { getSupabaseClient } = await import('../utils/db.ts');
+      const { getSupabaseClient } = await import('../_shared/utils/db.ts');
       const client = getSupabaseClient();
       const { data, error } = await client
         .from('vaults')
@@ -57,19 +72,19 @@ async function handleRequest(req: Request): Promise<Response> {
       if (error || !data) {
         return new Response(
           JSON.stringify({ code: 'NOT_FOUND', message: 'Vault not found' }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } }
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       vault = data;
     } else {
-      const { getVaultByChainAndAddress } = await import('../utils/db.ts');
+      const { getVaultByChainAndAddress } = await import('../_shared/utils/db.ts');
       vault = await getVaultByChainAndAddress(chainId, vaultAddress);
 
       if (!vault) {
         return new Response(
           JSON.stringify({ code: 'NOT_FOUND', message: 'Vault not found' }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } }
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
@@ -84,7 +99,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -95,7 +110,7 @@ async function handleRequest(req: Request): Promise<Response> {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
