@@ -8,7 +8,7 @@ if (!GRAPH_API_KEY) {
   );
 }
 
-const UNISWAP_V4_SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/${GRAPH_API_KEY}/subgraphs/id/aa3YpP—pS4Kit`;
+const UNISWAP_V4_SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/${GRAPH_API_KEY}/subgraphs/id/DiYPVdygkfjDWhbxGSqAQxwBKmfKnkWQojqeM2rkLb3G`;
 
 export async function fetchSubgraph<T>(query: string, variables?: Record<string, any>): Promise<T> {
   const response = await fetch(UNISWAP_V4_SUBGRAPH_ENDPOINT, {
@@ -41,53 +41,49 @@ export async function fetchSubgraph<T>(query: string, variables?: Record<string,
   return data;
 }
 
-// export const GET_MOST_LIQUID_POOLS = `
-//   query GetMostLiquidPools {
-//     pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) {
-//       id
-//       feeTier
-//       tickSpacing
-//       hooks
-//       token0 {
-//         symbol
-//         decimals
-//         id
-//       }
-//       token1 {
-//         symbol
-//         decimals
-//         id
-//       }
-//       totalValueLockedUSD
-//       totalValueLockedToken0
-//       totalValueLockedToken1
-//       volumeUSD
-//     }
-//   }
-// `;
+export const GET_MOST_LIQUID_POOLS = `
+  query GetMostLiquidPools {
+    pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) {
+      id
+      feeTier
+      token0 {
+        symbol
+        decimals
+        id
+      }
+      token1 {
+        symbol
+        decimals
+        id
+      }
+      totalValueLockedUSD
+      totalValueLockedToken0
+      totalValueLockedToken1
+      volumeUSD
+    }
+  }
+`;
 
-// // Define a type for the pool data
-// export type Pool = {
-//   id: string;
-//   feeTier: string;
-//   tickSpacing: number;
-//   hooks: string;
-//   token0: {
-//     symbol: string;
-//     decimals: number;
-//     id: string;
-//   };
-//   token1: {
-//     symbol: string;
-//     decimals: number;
-//     id: string;
-//   };
-//   totalValueLockedUSD: string;
-//   totalValueLockedToken0: string;
-//   totalValueLockedToken1: string;
-//   volumeUSD: string;
-// };
+// Define a type for the pool data
+export type Pool = {
+  id: string;
+  feeTier: string;
+  token0: {
+    symbol: string;
+    decimals: number;
+    id: string;
+  };
+  token1: {
+    symbol: string;
+    decimals: number;
+    id: string;
+  };
+  totalValueLockedUSD: string;
+  totalValueLockedToken0: string;
+  totalValueLockedToken1: string;
+  volumeUSD: string;
+};
 
-// export type GetMostLiquidPoolsResponse = {
-//   pools: Pool[];
-// };
+export type GetMostLiquidPoolsResponse = {
+  pools: Pool[];
+};

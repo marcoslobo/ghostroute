@@ -28,7 +28,7 @@ export function WalletStatus() {
     return null;
   }
 
-  const chainName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Ethereum' : chainId === 1301 ? 'Uniswap Sepolia' : `Chain ${chainId}`;
+  const chainName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Ethereum' : `Chain ${chainId}`;
 
   return (
     <div className="glass rounded-lg p-4 mt-4 border border-ghost-border shadow-card">
@@ -48,7 +48,7 @@ export function WalletStatus() {
       </div>
       {error && (
         <div className="mt-2 p-2 bg-red-900/20 border border-red-700 rounded-md text-sm text-red-400 flex items-center gap-1">
-          <XCircle size={16} /> {typeof error === 'string' ? error : (error as Error)?.message || 'An unknown error occurred.'}
+          <XCircle size={16} /> {error.message || 'An unknown error occurred.'}
         </div>
       )}
     </div>
