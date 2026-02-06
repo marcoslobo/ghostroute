@@ -32,7 +32,7 @@ const config = createConfig({
   ],
   transports: {
     [mainnet.id]: http('https://eth.llamarpc.com'),
-    [sepolia.id]: http('https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'),
+    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org'),
   },
   ssr: false,
 });
