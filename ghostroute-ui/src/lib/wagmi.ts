@@ -9,7 +9,7 @@ const transports = {
     http('https://cloudflare-eth.com'),
   ]),
   [sepolia.id]: fallback([
-    http('https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'),    
+    http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org'),
   ]),
   [unichainSepolia.id]: http('https://sepolia.unichain.org'),
 }
