@@ -72,8 +72,7 @@ export function IdentitySection() {
           </button>
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-700 rounded-md text-sm text-red-400 flex items-center gap-2">
-              <XCircle size={16} />
-              <span>{error || 'An error occurred during identity derivation.'}</span>
+              <XCircle size={16} /> {typeof error === 'string' ? error : (error as Error)?.message || 'An error occurred during identity derivation.'}
             </div>
           )}
         </div>

@@ -1,6 +1,14 @@
 import 'server-only';
 
-const UNISWAP_V4_SUBGRAPH_ENDPOINT = 'https://indexer.dev.hyperindex.xyz/4d6927b/v1/graphql';
+const GRAPH_API_KEY = process.env.NEXT_PUBLIC_UNISWAP_V4_GRAPH_API_KEY;
+
+if (!GRAPH_API_KEY) {
+  throw new Error(
+    "NEXT_PUBLIC_UNISWAP_V4_GRAPH_API_KEY is not defined. Please set it in your .env.local file."
+  );
+}
+
+const UNISWAP_V4_SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/${GRAPH_API_KEY}/subgraphs/id/aa3YpP—pS4Kit`;
 
 export async function fetchSubgraph<T>(query: string, variables?: Record<string, any>): Promise<T> {
   const response = await fetch(UNISWAP_V4_SUBGRAPH_ENDPOINT, {
@@ -33,33 +41,53 @@ export async function fetchSubgraph<T>(query: string, variables?: Record<string,
   return data;
 }
 
-export const GET_MOST_LIQUID_POOLS = `
-  query GetMostLiquidPools {
-    Pool(limit: 5) {
-      id
-      currency0
-      currency1
-      fee
-      tickSpacing
-      hooks
-      liquidity
-      tick
-    }
-  }
-`;
+// export const GET_MOST_LIQUID_POOLS = `
+//   query GetMostLiquidPools {
+//     pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) {
+//       id
+//       feeTier
+//       tickSpacing
+//       hooks
+//       token0 {
+//         symbol
+//         decimals
+//         id
+//       }
+//       token1 {
+//         symbol
+//         decimals
+//         id
+//       }
+//       totalValueLockedUSD
+//       totalValueLockedToken0
+//       totalValueLockedToken1
+//       volumeUSD
+//     }
+//   }
+// `;
 
-// Define a type for the pool data
-export type Pool = {
-  id: string;
-  currency0: string;
-  currency1: string;
-  fee: string;
-  tickSpacing: string;
-  hooks: string;
-  liquidity: string;
-  tick: string;
-};
+// // Define a type for the pool data
+// export type Pool = {
+//   id: string;
+//   feeTier: string;
+//   tickSpacing: number;
+//   hooks: string;
+//   token0: {
+//     symbol: string;
+//     decimals: number;
+//     id: string;
+//   };
+//   token1: {
+//     symbol: string;
+//     decimals: number;
+//     id: string;
+//   };
+//   totalValueLockedUSD: string;
+//   totalValueLockedToken0: string;
+//   totalValueLockedToken1: string;
+//   volumeUSD: string;
+// };
 
-export type GetMostLiquidPoolsResponse = {
-  pools: Pool[];
-};
+// export type GetMostLiquidPoolsResponse = {
+//   pools: Pool[];
+// };
