@@ -1,7 +1,7 @@
 'use client'
 
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react' // Remove useEffect import
 
 interface WalletState {
   isConnected: boolean

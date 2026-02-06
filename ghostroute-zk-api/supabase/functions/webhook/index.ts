@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts';
 import {
   WebhookPayload,
   isNewCommitment,
@@ -8,53 +7,23 @@ import {
   validateNullifierSpent,
   handleNewCommitment,
   handleNullifierSpent,
-} from '../handlers/webhook.ts';
-import { getSupabaseClient, isEventProcessed, recordProcessedEvent } from '../utils/db.ts';
-import { vaultService } from '../handlers/events.ts';
-
-const WEBHOOK_SECRET = Deno.env.get('WEBHOOK_SECRET') || '';
+} from '../_shared/handlers/webhook.ts';
+import { getSupabaseClient, isEventProcessed, recordProcessedEvent } from '../_shared/utils/db.ts';
+import { vaultService } from '../_shared/handlers/events.ts';
+import { adaptListenerPayload, isListenerFormat } from '../_shared/adapters/listener-adapter.ts';
+import { ListenerEventPayload } from '../_shared/adapters/listener-types.ts';
 
 interface WebhookResponse {
   received: boolean;
   eventId: string;
-  status: 'accepted' | 'duplicate' | 'error';
+  status: 'accepted' | 'duplicate' | 'error' | 'ignored';
   timestamp: string;
+  message?: string;
 }
 
-function verifySignature(
-  payload: string,
-  signature: string
-): boolean {
-  if (!WEBHOOK_SECRET) {
-    console.warn('WEBHOOK_SECRET not set, skipping signature verification');
-    return true;
-  }
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(WEBHOOK_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  );
-
-  const expectedSignature = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(payload)
-  );
-
-  const signatureBuffer = new Uint8Array(signature.length / 2 - 1);
-  for (let i = 0; i < signatureBuffer.length; i++) {
-    signatureBuffer[i] = parseInt(signature.slice(2 + i * 2, 4 + i * 2), 16);
-  }
-
-  return await crypto.subtle.timingSafeEqual(
-    new Uint8Array(expectedSignature),
-    signatureBuffer
-  );
-}
+// SIGNATURE VERIFICATION DISABLED FOR DEVELOPMENT
+// TODO: Re-enable when listener supports webhook signatures
+// const WEBHOOK_SECRET = Deno.env.get('WEBHOOK_SECRET') || '';
 
 async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -64,11 +33,46 @@ async function handleRequest(req: Request): Promise<Response> {
     );
   }
 
-  const signature = req.headers.get('X-Webhook-Signature') || '';
-
   try {
     const body = await req.text();
-    const payload: WebhookPayload = JSON.parse(body);
+    const rawPayload = JSON.parse(body);
+
+    // Detect payload format and adapt if needed
+    let payload: WebhookPayload;
+
+    if (isListenerFormat(rawPayload)) {
+      // Listener format - needs adaptation
+      console.log('[webhook] 🔄 Received listener format, adapting...');
+      const adapted = adaptListenerPayload(rawPayload as ListenerEventPayload);
+
+      if (!adapted) {
+        // Event type doesn't need processing (e.g., MerkleRootUpdated, AnonymousWithdrawal)
+        // Return success without processing
+        console.log('[webhook] ℹ️  Event type does not require processing, returning success');
+        return new Response(
+          JSON.stringify({
+            received: true,
+            eventId: (rawPayload as ListenerEventPayload).Id,
+            status: 'ignored',
+            message: 'Event type does not require processing',
+            timestamp: new Date().toISOString(),
+          } as WebhookResponse),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      payload = adapted;
+      console.log('[webhook] ✅ Successfully adapted to API format');
+    } else if ('eventId' in rawPayload && 'commitment' in rawPayload) {
+      // Already in API format (backward compatibility)
+      console.log('[webhook] ℹ️  Received API format (no adaptation needed)');
+      payload = rawPayload as WebhookPayload;
+    } else {
+      throw new Error(
+        'Unknown payload format. Expected either listener format (with DecodedParametersNames) ' +
+          'or API format (with eventId and commitment)'
+      );
+    }
 
     let eventId: string;
     let chainId: number;
@@ -123,7 +127,8 @@ async function handleRequest(req: Request): Promise<Response> {
       eventId,
       payload.block.number,
       eventType === 'NewCommitment' ? (payload as any).commitment.hash : null,
-      eventType === 'NullifierSpent' ? (payload as any).nullifier.hash : null
+      eventType === 'NullifierSpent' ? (payload as any).nullifier.hash : null,
+      eventType === 'NewCommitment' ? (payload as any).commitment.index : null
     );
 
     const response: WebhookResponse = {

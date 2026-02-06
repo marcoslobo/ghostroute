@@ -7,7 +7,7 @@
  * Runs on Deno Deploy for edge computing.
  */
 
-const RPC_URL = Deno.env.get("RPC_URL") || "https://rpc.sepolia.org";
+const RPC_URL = Deno.env.get("RPC_URL") || "https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'";
 const WEBHOOK_URL = Deno.env.get("WEBHOOK_URL") || "http://localhost:8080/webhook";
 const VAULT_ADDRESS = Deno.env.get("VAULT_ADDRESS");
 

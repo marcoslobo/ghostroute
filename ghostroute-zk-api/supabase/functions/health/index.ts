@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { checkDatabaseConnection } from '../utils/db.ts';
+import { checkDatabaseConnection } from '../_shared/utils/db.ts';
 
 interface HealthCheckResponse {
   status: 'healthy' | 'degraded' | 'unhealthy';

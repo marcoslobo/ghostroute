@@ -1,0 +1,8 @@
+{
+  "contractAddress": "0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4",
+  "blockchainNetworkId": "YOUR_SEPOLIA_NETWORK_UUID",
+  "eventSignature": "VerifierUpdated(address)",
+  "abiJson": "[{\"type\":\"event\",\"name\":\"VerifierUpdated\",\"inputs\":[{\"name\":\"newVerifier\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+  "preferredChannel": 1,
+  "webhookUrl": "https://asjoskislowbasxamnrh.supabase.co/functions/v1/webhook"
+}
