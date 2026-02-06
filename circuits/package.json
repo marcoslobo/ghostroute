@@ -1,0 +1,15 @@
+{
+  "name": "circuits",
+  "version": "1.0.0",
+  "description": "This Noir circuit implements the core ZK logic for the PrivacyVault, enabling users to prove note ownership and authorize withdrawals or Uniswap v4 actions without revealing their identity.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aztec/bb.js": "^2.1.11"
+  }
+}

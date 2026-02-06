@@ -1,0 +1,8 @@
+{
+  "contractAddress": "0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4",
+  "blockchainNetworkId": "YOUR_SEPOLIA_NETWORK_UUID",
+  "eventSignature": "Deposit(bytes32,bytes32,address,uint256,uint256,bytes32)",
+  "abiJson": "[{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"commitment\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"nullifier\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"token\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"leafIndex\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false}]",
+  "preferredChannel": 1,
+  "webhookUrl": "https://asjoskislowbasxamnrh.supabase.co/functions/v1/webhook"
+}
