@@ -24,7 +24,7 @@ const transports = {
   [sepolia.id]: fallback([
     http('https://sepolia.infura.io/v3/{INFURA_API_KEY}'),
     http('https://eth-sepolia.g.alchemy.com/v2/{ALCHEMY_API_KEY}'),
-    http('https://rpc.sepolia.org'),
+    http('https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef'),
   ]),
 }
 ```

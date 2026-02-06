@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useEffect, useState } from 'react';
 
 const SUPPORTED_CHAINS = [
+  { id: 1301, name: 'Unichain Sepolia' },
   { id: 11155111, name: 'Sepolia' },
   { id: 1, name: 'Ethereum' },
 ] as const;
