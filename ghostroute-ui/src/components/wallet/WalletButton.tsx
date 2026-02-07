@@ -18,14 +18,14 @@ export function WalletButton() {
 
   if (isConnected && address) {
     return (
-      <Button onClick={handleClick} disabled={isConnecting} variant="outline" style={{ fontSize: '0.875rem', padding: '0.375rem 0.75rem' }}>
+      <Button onClick={handleClick} disabled={isConnecting} variant="outline" size="sm" className="text-xs px-3 py-1.5">
         {address.slice(0, 6)}...{address.slice(-4)}
       </Button>
     );
   }
 
   return (
-    <Button onClick={handleClick} disabled={isConnecting} variant="primary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+    <Button onClick={handleClick} disabled={isConnecting} variant="primary" size="sm" className="text-sm px-4 py-2">
       {isConnecting ? 'Connecting...' : 'Connect Wallet'}
     </Button>
   );

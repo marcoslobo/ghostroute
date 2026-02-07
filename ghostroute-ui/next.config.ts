@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Force webpack instead of turbopack
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve = {
@@ -20,24 +21,32 @@ const nextConfig: NextConfig = {
           path: false,
           os: false,
           child_process: false,
+          cluster: false,
         },
       };
     }
     
-    // Fix for Noir/WebAssembly modules in Vercel
+    // Completely ignore worker_modules that cause issues
+    config.externals = config.externals || [];
+    config.externals.push(
+      'worker_threads',
+      'cluster',
+      'node:worker_threads',
+      'node:cluster'
+    );
+    
+    // Fix for Noir/WebAssembly modules
     config.resolve.alias = {
       ...config.resolve.alias,
       'worker_threads': false,
+      'node:worker_threads': false,
+      'cluster': false,
+      'node:cluster': false,
     };
-    
-    // Ignore worker_modules that cause issues in production
-    config.externals = config.externals || [];
-    config.externals.push({
-      'worker_threads': 'worker_threads',
-    });
     
     return config;
   },
+  
   async headers() {
     return [
       {

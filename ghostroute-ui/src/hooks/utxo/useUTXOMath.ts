@@ -82,7 +82,7 @@ export function useUTXOMath(): UseUTXOMathReturn {
             params.proof,
             params.root,
             params.nullifierHash,
-            params.changeCommitment,
+            params.changeCommitment as `0x${string}`,
             params.actionHash,
             params.investAmount,
             params.uniswapParams,

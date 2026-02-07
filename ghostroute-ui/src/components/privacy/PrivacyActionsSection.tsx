@@ -21,10 +21,10 @@ export function PrivacyActionsSection() {
   const { notes, totalBalance, refreshNotes } = useNotes();
 
   const tabs: { id: TabType; label: string }[] = [
+    { id: 'backup', label: 'Backup' },
     { id: 'deposit', label: 'Deposit' },
     { id: 'withdraw', label: 'Withdraw' },
     { id: 'notes', label: 'Your Notes' },
-    { id: 'backup', label: 'Backup' },
   ];
 
   const getTabClasses = (tabId: TabType) => {
@@ -57,10 +57,10 @@ export function PrivacyActionsSection() {
 
       {/* Tab Content */}
       <div className="mb-8">
+        {activeTab === 'backup' && <BackupSection />}
         {activeTab === 'deposit' && <DepositForm onComplete={refreshNotes} />}
         {activeTab === 'withdraw' && <WithdrawForm onComplete={refreshNotes} />}
         {activeTab === 'notes' && <NotesList notes={notes} totalBalance={totalBalance} />}
-        {activeTab === 'backup' && <BackupSection />}
       </div>
     </div>
   );
