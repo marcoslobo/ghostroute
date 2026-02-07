@@ -17,6 +17,7 @@ import { TokenSelector } from './TokenSelector';
 import { ApprovalButton } from './ApprovalButton';
 import { useDeposit } from '@/hooks/utxo/useDeposit';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAllowance } from '@/hooks/useTokenAllowance';
 import { isETH, ETH_TOKEN_ADDRESS, getTokenInfo } from '@/config/tokens';
 import { useWalletClient } from 'wagmi';
 
@@ -32,6 +33,13 @@ export function DepositForm({ onComplete }: DepositFormProps) {
   const [amount, setAmount] = useState('');
   const [success, setSuccess] = useState(false);
   const { data: walletClient } = useWalletClient();
+
+  // Check token allowance for ERC20 deposits
+  const {
+    hasSufficientAllowance,
+    isApproving,
+    isWaitingApproval,
+  } = useTokenAllowance(token);
 
   console.log('[DepositForm] Render, token:', token, 'chainId:', chainId);
 
@@ -77,7 +85,10 @@ export function DepositForm({ onComplete }: DepositFormProps) {
     }
   };
 
-  const isProcessing = isPending || isConfirming;
+  const amountWei = parseAmount(amount);
+  const isERC20 = !isETH(token);
+  const isApproved = isERC20 ? hasSufficientAllowance(amountWei) : true;
+  const isProcessing = isPending || isConfirming || isApproving || isWaitingApproval;
   const chainIdNum = chainId || 11155111;
 
   if (!address) {
@@ -141,13 +152,15 @@ export function DepositForm({ onComplete }: DepositFormProps) {
 
         <Button
           type="submit"
-          disabled={isProcessing || !amount || parseFloat(amount) <= 0}
+          disabled={isProcessing || !amount || parseFloat(amount) <= 0 || (isERC20 && !isApproved)}
           className="w-full"
         >
           {isPending
             ? 'Confirm in wallet...'
             : isConfirming
             ? 'Confirming...'
+            : isERC20 && !isApproved
+            ? `Approve ${tokenInfo?.symbol || 'Token'} first`
             : `Deposit ${isETH(token) ? 'ETH' : tokenInfo?.symbol || ''}`}
         </Button>
       </form>

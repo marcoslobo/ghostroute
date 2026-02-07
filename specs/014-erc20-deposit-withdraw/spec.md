@@ -1,118 +1,176 @@
-# Feature Specification: ERC20 Deposit & Withdraw Support
+# Feature Specification: Uniswap Pool Investment via Privacy Vault
 
-**Feature Branch**: `014-erc20-deposit-withdraw`  
-**Created**: 2026-02-06  
+**Feature Branch**: `014-uniswap-pool-investment`  
+**Created**: 2026-02-07  
 **Status**: Draft  
-**Input**: User description: "Preciso que alem de deposito e withdraw de ETH, possa ser feito de tokens ERC20 tambem."
+**Input**: User request: "Precisamos agora fazer que com que o user consiga investir em pools da uniswap(ja temos elas listada na tela). Deve usar os notes que o user ja fez deposito(usar o webhook da v4)"
+
+## Summary
+
+Enable users to invest their deposited notes (ETH/ERC20) into Uniswap v4 liquidity pools while maintaining full privacy. The system will use the existing `executeAction` function in PrivacyVault, which validates ZK proofs and atomically adds liquidity to pools via the PrivacyLiquidityHook. The investment flow must select from existing notes (populated via webhook v4 deposits), calculate UTXO splits, and execute privacy-preserving liquidity additions.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - ERC20 Token Deposit (Priority: P1)
+### User Story 1 - Select Pool and Invest Note (Priority: P0)
 
-User wants to deposit ERC20 tokens (e.g., USDC, DAI, WETH) into the PrivacyVault with the same privacy guarantees as ETH deposits. The vault must receive the tokens via Permit2 (gasless approval) and produce a valid Merkle tree commitment that includes the token address, ensuring the anonymity set encompasses multiple asset types within a unified tree.
+User wants to select a Uniswap v4 pool from the pools list and invest funds from one of their deposited notes. The UI should show available pools with their APY/TVL info, allow note selection, investment amount input, and execute the privacy-preserving liquidity addition.
 
-**Why this priority**: The constitution mandates support for "diverse assets (ETH/ERC20) within a unified Merkle Tree." Currently, only ETH deposits work end-to-end. ERC20 deposits are the most fundamental missing piece — without them, no ERC20 withdrawals or actions are possible.
+**Why this priority**: This is the core feature requested by the user - connecting the existing pool list UI with the ability to invest using deposited notes.
 
-**Independent Test**: Can be fully tested by deploying a mock ERC20, approving Permit2, calling `depositERC20()`, and verifying the commitment is added to the Merkle tree, the token balance transfers to the vault, and the deposit event contains the correct token address and amount.
-
-**Acceptance Scenarios**:
-
-1. **Given** user has 1000 USDC and has approved Permit2, **When** user calls `depositERC20` with a valid commitment and Permit2 signature, **Then** 1000 USDC is transferred to the vault, a new leaf is added to the Merkle tree, and a `Deposit` event is emitted with `token=USDC_ADDRESS`.
-2. **Given** user has 0 USDC, **When** user calls `depositERC20`, **Then** the transaction reverts with an appropriate error (Permit2 transfer failure).
-3. **Given** Merkle tree at capacity (2^20 leaves), **When** user calls `depositERC20`, **Then** transaction reverts with `TreeAtCapacity` error.
-4. **Given** user provides `amount=0`, **When** user calls `depositERC20`, **Then** transaction reverts with `InvalidTokenAmount` error.
-5. **Given** user provides `token=address(0)`, **When** user calls `depositERC20`, **Then** transaction reverts with `InvalidToken` error (must use ETH deposit function for native ETH).
-
----
-
-### User Story 2 - ERC20 Token Withdrawal (Priority: P1)
-
-User wants to withdraw ERC20 tokens from the PrivacyVault using a ZK proof, with no on-chain link between the original deposit and the withdrawal. The withdrawal must specify the token address and amount, and the vault must transfer the correct ERC20 tokens to the recipient.
-
-**Why this priority**: Withdrawal is the second half of the core deposit/withdraw cycle. Without ERC20 withdrawals, deposited ERC20 tokens are locked with no way to retrieve them.
-
-**Independent Test**: Can be tested by depositing an ERC20 token, generating a ZK proof (using mock verifier), calling `withdrawERC20()`, and verifying the recipient receives the correct token amount, the nullifier is marked spent, and the change commitment is added to the tree.
+**Independent Test**: Can be tested by having a user with deposited notes, selecting a pool, entering investment amount, confirming transaction, and verifying the liquidity was added to the pool while a change note was created.
 
 **Acceptance Scenarios**:
 
-1. **Given** vault holds 1000 USDC and user has a valid ZK proof for 500 USDC withdrawal, **When** user calls `withdrawERC20` with valid proof, root, nullifier, change commitment, recipient, token, and amount, **Then** 500 USDC is transferred to recipient, nullifier is marked spent, change commitment is added to tree.
-2. **Given** vault holds 100 USDC but user attempts to withdraw 500 USDC, **When** user calls `withdrawERC20`, **Then** transaction reverts with `InsufficientBalance` error.
-3. **Given** nullifier has already been spent, **When** user calls `withdrawERC20` with same nullifier, **Then** transaction reverts with `Nullifier already spent` error.
-4. **Given** provided Merkle root doesn't match current root, **When** user calls `withdrawERC20`, **Then** transaction reverts with `Invalid Merkle root` error.
+1. **Given** user has a note with 1 ETH and pools are listed, **When** user selects ETH/USDC pool and invests 0.5 ETH, **Then** liquidity is added to the pool, change note (0.5 ETH minus gas) is created, and input note is marked as spent.
+2. **Given** user has no unspent notes, **When** user views pool list, **Then** "Invest" buttons are disabled with message "Deposit first to invest".
+3. **Given** user tries to invest more than note value, **When** user enters amount > note.value, **Then** error is shown "Insufficient funds in selected note".
+4. **Given** pool requires both tokens (ETH + USDC), **When** user only has ETH note, **Then** system should handle single-sided liquidity or show warning.
 
 ---
 
-### User Story 3 - Unified Simplified Deposit (Priority: P2)
+### User Story 2 - Investment Preview with UTXO Split (Priority: P0)
 
-User wants a simplified deposit function (for testing/development) that supports both ETH and ERC20 in a single interface, using a `token` parameter to distinguish. For ETH, `token=address(0)` and value is sent via `msg.value`. For ERC20, `token=<token_address>` and tokens are transferred via `transferFrom` (standard approval, not Permit2).
+User wants to see a preview of the investment transaction including: investment amount going to pool, gas estimate, and change note value before confirming.
 
-**Why this priority**: A simplified deposit function accelerates development and testing. Permit2 integration adds complexity; having a basic `transferFrom` path allows testing the full deposit-withdraw cycle for ERC20 without Permit2 infrastructure.
+**Why this priority**: The UTXO model requires users to understand the split between investment and change.
 
-**Independent Test**: Can be tested by deploying a mock ERC20, approving the vault directly, calling `deposit()` with token parameter, and verifying the commitment and token transfer.
+**Independent Test**: Enter investment amount and verify preview shows correct breakdown.
 
 **Acceptance Scenarios**:
 
-1. **Given** user has approved vault for 100 DAI, **When** user calls `deposit(token=DAI, amount=100, commitment, nullifier)`, **Then** 100 DAI transfers to vault, leaf is added to tree.
-2. **Given** user sends ETH with `token=address(0)`, **When** `msg.value > 0` and matches amount, **Then** ETH is deposited as before.
-3. **Given** user sends ETH but `token != address(0)`, **When** `msg.value > 0`, **Then** transaction reverts (cannot send ETH for ERC20 deposit).
+1. **Given** user enters 0.5 ETH investment from 1 ETH note, **When** preview is displayed, **Then** shows: Investment: 0.5 ETH, Gas: ~0.01 ETH, Change: 0.49 ETH.
+2. **Given** investment + gas > note value, **When** preview calculates, **Then** shows error "Insufficient funds for investment and gas".
 
 ---
 
-### User Story 4 - ERC20 Balance Tracking (Priority: P2)
+### User Story 3 - Generate ZK Proof and Execute Action (Priority: P0)
 
-The vault must track ERC20 token balances per token address to ensure sufficient funds exist for withdrawals. This is critical since unlike ETH (which uses `address(this).balance`), ERC20 balances must be tracked or queried via `balanceOf`.
+System must generate a ZK proof that proves ownership of the input note and commits to the Uniswap action parameters (actionHash), then call `executeAction` on PrivacyVault.
 
-**Why this priority**: Balance tracking is necessary for withdrawal validation but can initially rely on `IERC20.balanceOf(address(this))` rather than internal accounting.
-
-**Independent Test**: Can be tested by depositing tokens, verifying `balanceOf` matches, withdrawing, and verifying the balance decreases accordingly.
+**Why this priority**: ZK proof is fundamental to the privacy guarantee.
 
 **Acceptance Scenarios**:
 
-1. **Given** vault has 0 USDC, **When** user deposits 500 USDC, **Then** `IERC20(USDC).balanceOf(vault)` returns 500.
-2. **Given** vault has 500 USDC, **When** user withdraws 200 USDC via ZK proof, **Then** `balanceOf` returns 300.
+1. **Given** user confirms investment, **When** proof is generated, **Then** proof includes: root, nullifierHash, changeCommitment, actionHash, investAmount.
+2. **Given** proof is valid, **When** executeAction is called, **Then** transaction succeeds, nullifier is spent, change commitment is added to tree.
+3. **Given** proof generation fails, **When** error occurs, **Then** user-friendly error is shown and no transaction is submitted.
 
 ---
 
-### Edge Cases
+### User Story 4 - Process Investment via Webhook (Priority: P1)
 
-- What happens when a user deposits a **fee-on-transfer token** (e.g., USDT)? The commitment amount may not match actual received amount.
-- What happens when a user deposits a **rebasing token** (e.g., stETH)? The vault balance changes without deposits/withdrawals.
-- How does the system handle **token address = address(0)** in ERC20-specific functions?
-- What happens if the ERC20 `transfer` returns `false` instead of reverting?
-- How are **WETH wrapping/unwrapping** scenarios handled? Should the vault auto-wrap ETH deposits?
-- What happens if the ERC20 token is **paused** or **blacklists** the vault address?
-- Privacy impact: does the `token` field in the commitment leak information about what asset is being moved?
+The webhook must process `ActionExecuted` events to update the Merkle tree with the change commitment, allowing the user to later spend or withdraw from the change note.
+
+**Why this priority**: Without webhook processing, change notes from investments cannot be used.
+
+**Acceptance Scenarios**:
+
+1. **Given** executeAction emits ActionExecuted event, **When** webhook receives event, **Then** change commitment is added to Merkle tree in database.
+2. **Given** multiple investments in same block, **When** webhook processes events, **Then** all change commitments are added in correct order (by leafIndex).
+
+---
+
+### User Story 5 - Pool Selection with Token Matching (Priority: P1)
+
+User should only be able to invest in pools that match their note's token type. ETH notes can invest in pools containing WETH/ETH; ERC20 notes can invest in pools containing that token.
+
+**Acceptance Scenarios**:
+
+1. **Given** user has ETH note, **When** viewing pools, **Then** pools containing ETH/WETH are highlighted as compatible.
+2. **Given** user has USDC note, **When** viewing pools, **Then** pools containing USDC are highlighted as compatible.
+
+---
+
+## Edge Cases
+
+- What happens if the Uniswap pool doesn't have enough liquidity to accept the position?
+- What happens if the pool tick range is invalid for the current price?
+- How to handle slippage in liquidity addition?
+- What happens if the transaction reverts after nullifier is marked spent (should be atomic, but verify)?
+- How to handle fee-on-transfer tokens in pool investment?
+- What if the user's note was created before the current Merkle root (historical root validation)?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST support ERC20 token deposits via both simplified (`transferFrom`) and production (`Permit2`) paths
-- **FR-002**: System MUST support ERC20 token withdrawals with ZK proof verification, identical privacy guarantees to ETH withdrawals
-- **FR-003**: System MUST include the token address in the commitment hash to bind the note to a specific asset
-- **FR-004**: System MUST validate that the vault holds sufficient ERC20 balance before executing a withdrawal
-- **FR-005**: System MUST use SafeERC20 (or equivalent safe transfer pattern) to handle non-standard ERC20 tokens that don't return `bool`
-- **FR-006**: System MUST prevent sending ETH (`msg.value > 0`) when depositing ERC20 tokens
-- **FR-007**: System MUST emit events that include the token address for all ERC20 deposits and withdrawals
-- **FR-008**: System MUST preserve the unified Merkle tree — ETH and ERC20 commitments coexist in the same tree
-- **FR-009**: System MUST reconstruct actionHash for ERC20 withdrawals as `keccak256(abi.encodePacked(recipient, token, amount))` to bind the token type
-- **FR-010**: System MUST prevent deposits of `token=address(0)` via ERC20 deposit functions (use ETH deposit instead)
-- **FR-011**: System MUST maintain backward compatibility with existing ETH deposit and withdraw functions
+- **FR-001**: System MUST allow users to select a pool from the existing pool list and initiate investment
+- **FR-002**: System MUST allow users to select an unspent note as the funding source
+- **FR-003**: System MUST calculate and display investment preview with UTXO split (investment, gas, change)
+- **FR-004**: System MUST generate a ZK proof binding the note, actionHash (pool + params), and change commitment
+- **FR-005**: System MUST call `executeAction` on PrivacyVault with valid proof and parameters
+- **FR-006**: System MUST update the Merkle tree via webhook when ActionExecuted event is emitted
+- **FR-007**: System MUST save the change note to localStorage for future use
+- **FR-008**: System MUST mark the input note as spent after successful investment
+- **FR-009**: System MUST compute actionHash using `keccak256(abi.encodePacked(poolId, tickLower, tickUpper, amount0, amount1))`
+- **FR-010**: System MUST validate that the note's token matches one of the pool's tokens
+
+### Non-Functional Requirements
+
+- **NFR-001**: Proof generation SHOULD complete within 30 seconds on modern browsers
+- **NFR-002**: Investment transaction SHOULD cost less than 300,000 gas
+- **NFR-003**: UI MUST show loading states during proof generation and transaction confirmation
 
 ### Key Entities
 
-- **PrivacyVault**: Extended to handle ERC20 token transfers alongside existing ETH logic
-- **ERC20 Deposit Note**: A commitment that includes `H(nullifier, token, amount, salt)` — token address is bound into the note
-- **ERC20 Withdrawal**: ZK-verified transfer of ERC20 tokens from vault to recipient, with UTXO change model
-- **Token Registry** (optional, future): Whitelist of supported ERC20 tokens for the vault
+- **InvestmentParams**: poolId, tickLower, tickUpper, liquidityDelta, noteCommitment
+- **ActionHash**: keccak256 hash of pool parameters for ZK proof binding
+- **ChangeNote**: UTXO note created from investment change (inputNote.value - investAmount - gas)
+- **PoolPosition**: Resulting LP position from investment
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: ERC20 deposit gas cost under 150,000 gas (simplified path) and under 200,000 gas (Permit2 path)
-- **SC-002**: ERC20 withdrawal gas cost under 250,000 gas
-- **SC-003**: 100% test coverage for all ERC20 deposit and withdrawal paths
-- **SC-004**: All existing ETH tests continue to pass without modification (backward compatibility)
-- **SC-005**: Zero linkability between ERC20 deposit transactions and withdrawal transactions
-- **SC-006**: SafeERC20 transfer pattern correctly handles non-reverting tokens (USDT-style)
+- **SC-001**: Users can successfully invest notes into any listed pool
+- **SC-002**: Change notes from investments can be spent in subsequent transactions
+- **SC-003**: No on-chain link exists between the original deposit and the pool investment
+- **SC-004**: Webhook correctly processes ActionExecuted events and updates Merkle tree
+- **SC-005**: All investment transactions are atomic (if pool add fails, nullifier is not spent)
+
+## Technical Architecture
+
+### Existing Components to Integrate
+
+1. **PrivacyVault.executeAction()** - Already implemented (lines 280-365)
+   - Validates ZK proof
+   - Prevents double-spending via nullifier
+   - Adds change commitment to Merkle tree
+   - Emits ActionExecuted event
+
+2. **PrivacyLiquidityHook** - Already implemented
+   - Receives calls from PrivacyVault
+   - Validates authorization via transient storage
+   - Adds liquidity to Uniswap v4 pool
+
+3. **Frontend Pool List** - Already implemented (UniswapV4PoolsClient.tsx)
+   - Displays available pools
+   - Has "Add Liquidity" button (needs to be connected to notes)
+
+4. **Webhook (v4)** - Partially implemented
+   - Processes Deposit events
+   - TODO: Add ActionExecuted event handling
+
+### New/Modified Components
+
+1. **PoolInvestmentForm** - New component
+   - Pool selector (from existing list)
+   - Note selector (from unspent notes)
+   - Investment amount input
+   - Preview display
+   - Confirm button
+
+2. **usePoolInvestment** - New hook
+   - Combines useUTXOMath with pool-specific logic
+   - Computes actionHash for selected pool
+   - Generates ZK proof
+   - Calls executeAction
+
+3. **Webhook Handler** - Extend existing
+   - Add handleActionExecuted function
+   - Process ActionExecuted events
+   - Add change commitment to Merkle tree
+
+4. **actionHash Computation** - Frontend utility
+   - Match contract's computeActionHash logic
+   - Encode pool parameters correctly

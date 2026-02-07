@@ -65,8 +65,7 @@ export default async function Home() { // Make Home async
 
         {/* Privacy Vault Operations */}
         <div className="max-w-6xl mx-auto">
-          <PrivacyActionsSection />
-          <BackupSection />
+          <PrivacyActionsSection />          
         </div>
 
         {/* Uniswap Pools Section */}

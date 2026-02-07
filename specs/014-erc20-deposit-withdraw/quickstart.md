@@ -1,53 +1,255 @@
-# Quickstart: ERC20 Deposit & Withdraw Support
+# Quickstart: Uniswap Pool Investment via Privacy Vault
 
-**Feature**: `014-erc20-deposit-withdraw`  
-**Date**: 2026-02-06
+**Feature**: `014-uniswap-pool-investment`  
+**Date**: 2026-02-07
+
+---
+
+## Overview
+
+This guide shows how to invest deposited notes into Uniswap v4 pools while maintaining privacy. The investment flow:
+
+1. User selects a pool from the list
+2. User selects an unspent note
+3. User enters investment amount
+4. System calculates change note
+5. User confirms and transaction executes via `executeAction`
+6. Webhook processes the event and updates Merkle tree
 
 ---
 
 ## Prerequisites
 
 - Foundry installed (`forge`, `cast`, `anvil`)
-- Node.js 20+ (for scripts)
-- Repository cloned with submodules: `git clone --recursive`
+- Node.js 20+ (for frontend)
+- Repository cloned with submodules
+- Deposited notes in PrivacyVault (from prior deposits)
 
-## Setup
+---
 
-```bash
-# Navigate to contracts directory
-cd ghostroute-contracts
+## Frontend Usage
 
-# Install dependencies (includes OpenZeppelin, Permit2)
-forge install
+### 1. Connect Wallet and View Pools
 
-# Compile contracts
-forge build
+Navigate to the pools page. Compatible pools will be highlighted based on your notes.
+
+### 2. Click "Invest" on a Pool
+
+The investment modal opens with:
+- Note selector (showing unspent notes matching pool tokens)
+- Investment amount input
+- Tick range configuration (advanced)
+- Preview panel
+
+### 3. Review Investment Preview
+
+```
+Investment Preview
+─────────────────
+Input Note:     1.5 ETH
+Investment:     1.0 ETH
+Gas Estimate:   0.01 ETH
+Change Note:    0.49 ETH
+─────────────────
+Action Hash:    0x1234...5678
+Pool:           ETH/USDC (0.30%)
+Tick Range:     [-887220, 887220]
 ```
 
-## Running Tests
+### 4. Confirm Transaction
 
-### All tests (including existing ETH tests + new ERC20 tests)
+Click "Confirm Investment". The system will:
+1. Generate ZK proof (placeholder for MVP)
+2. Submit `executeAction` transaction
+3. Wait for confirmation
+4. Save change note to localStorage
+5. Mark input note as spent
 
-```bash
-cd ghostroute-contracts
-forge test -vvv
+---
+
+## Code Examples
+
+### Using usePoolInvestment Hook
+
+```typescript
+import { usePoolInvestment } from '@/hooks/utxo/usePoolInvestment';
+import { useNotes } from '@/hooks/utxo/useNotes';
+
+function InvestmentComponent({ pool }) {
+  const { unspentNotes } = useNotes();
+  const { 
+    invest, 
+    calculateInvestment, 
+    isCompatiblePool,
+    isPending,
+    error 
+  } = usePoolInvestment();
+
+  // Filter compatible notes
+  const compatibleNotes = unspentNotes.filter(
+    note => isCompatiblePool(pool, note)
+  );
+
+  // Calculate preview
+  const handleAmountChange = (amount: string) => {
+    const investAmount = parseEther(amount);
+    const preview = calculateInvestment(
+      selectedNote,
+      pool,
+      investAmount,
+      -887220, // tickLower
+      887220   // tickUpper
+    );
+    setPreview(preview);
+  };
+
+  // Execute investment
+  const handleInvest = async () => {
+    const result = await invest({
+      inputNote: selectedNote,
+      pool,
+      investAmount: parseEther(amount),
+      tickLower: -887220,
+      tickUpper: 887220,
+    });
+    
+    if (result.success) {
+      console.log('Investment successful!');
+      console.log('Change note:', result.changeNote);
+    }
+  };
+
+  return (
+    <div>
+      {isPending && <p>Confirming...</p>}
+      {error && <p>Error: {error}</p>}
+      <button onClick={handleInvest}>Invest</button>
+    </div>
+  );
+}
 ```
 
-### ERC20-specific tests only
+### Computing ActionHash
 
-```bash
-cd ghostroute-contracts
-forge test --match-path "tests/ERC20*" -vvv
+```typescript
+import { computeActionHash } from '@/utils/utxo/actionHash';
+
+// Compute actionHash for pool investment
+const actionHash = computeActionHash(
+  pool.fullPoolId,          // bytes32 pool ID
+  -887220,                  // tickLower
+  887220,                   // tickUpper
+  parseEther('1.0'),        // amount0Desired
+  0n                        // amount1Desired (single-sided)
+);
+
+console.log('Action Hash:', actionHash);
+// 0x1234567890abcdef...
 ```
 
-### Gas report for ERC20 operations
+### Checking Pool Compatibility
 
-```bash
-cd ghostroute-contracts
-forge test --match-path "tests/ERC20*" --gas-report
+```typescript
+import { isPoolCompatible, getInvestmentSide } from '@/utils/utxo/poolCompatibility';
+
+// Check if note can invest in pool
+const canInvest = isPoolCompatible(pool, note);
+console.log('Compatible:', canInvest); // true/false
+
+// Get which side of the pool the note matches
+const side = getInvestmentSide(pool, note);
+console.log('Investment side:', side); // 0, 1, or -1
 ```
 
-## Local Deployment (Anvil)
+---
+
+## Contract Interaction (Manual)
+
+### Using cast to call executeAction
+
+```bash
+# Set variables
+VAULT="0x3e078e8af9aBaf8156Beca429A1d35B9398a2208"
+RPC_URL="https://go.getblock.io/..."
+PRIVATE_KEY="0x..."
+
+# Placeholder proof (works with MockZKVerifier)
+PROOF="0x00"
+
+# Get current Merkle root
+ROOT=$(cast call $VAULT "currentRoot()" --rpc-url $RPC_URL)
+
+# Your values (compute off-chain)
+NULLIFIER_HASH="0x..."     # keccak256(note.nullifier)
+CHANGE_COMMITMENT="0x..."  # H(change_nullifier, token, change_amount, salt)
+ACTION_HASH="0x..."        # keccak256(poolId, tickLower, tickUpper, amount0, amount1)
+INVEST_AMOUNT="1000000000000000000"  # 1 ETH in wei
+UNISWAP_PARAMS="0x"        # Reserved for future use
+
+# Execute investment
+cast send $VAULT \
+  "executeAction(bytes,bytes32,bytes32,bytes32,bytes32,uint256,bytes)" \
+  $PROOF \
+  $ROOT \
+  $NULLIFIER_HASH \
+  $CHANGE_COMMITMENT \
+  $ACTION_HASH \
+  $INVEST_AMOUNT \
+  $UNISWAP_PARAMS \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --gas-limit 300000
+```
+
+### Computing ActionHash with cast
+
+```bash
+# Pool parameters
+POOL_ID="0x1234..."        # bytes32 pool ID
+TICK_LOWER="-887220"       # int24
+TICK_UPPER="887220"        # int24
+AMOUNT0="1000000000000000000"  # uint256
+AMOUNT1="0"                # uint256
+
+# Compute actionHash (matches contract's computeActionHash)
+ACTION_HASH=$(cast call $VAULT \
+  "computeActionHash(bytes32,int24,int24,uint256,uint256)" \
+  $POOL_ID $TICK_LOWER $TICK_UPPER $AMOUNT0 $AMOUNT1 \
+  --rpc-url $RPC_URL)
+
+echo "Action Hash: $ACTION_HASH"
+```
+
+---
+
+## Webhook Event Processing
+
+### Verify Webhook Receives ActionExecuted
+
+```bash
+# Check logs for ActionExecuted event after investment
+cast logs \
+  --rpc-url $RPC_URL \
+  --address $VAULT \
+  --from-block <BLOCK_NUMBER>
+```
+
+### Expected Event Data
+
+```
+ActionExecuted(
+  nullifierHash (indexed): 0x1234...
+  changeCommitment: 0xabcd...
+  actionHash: 0x5678...
+  investAmount: 1000000000000000000
+  timestamp: 1707321600
+  changeIndex: 42
+)
+```
+
+---
+
+## Testing Locally
 
 ### Terminal 1: Start Anvil
 
@@ -56,96 +258,160 @@ cd ghostroute-contracts
 anvil
 ```
 
-### Terminal 2: Deploy
+### Terminal 2: Deploy and Fund
 
 ```bash
 cd ghostroute-contracts
 
-# Deploy MockZKVerifier
-VERIFIER=$(forge create mocks/MockZKVerifier.sol:MockZKVerifier \
-  --rpc-url http://127.0.0.1:8545 \
+# Deploy using existing script
+forge script script/DeployPrivacyVault.s.sol \
+  --fork-url http://127.0.0.1:8545 \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-  --json | jq -r '.deployedTo')
+  --broadcast
 
-# Deploy PrivacyVault with verifier and Permit2 address
-# Note: On local Anvil, use a mock Permit2 or deploy one
-VAULT=$(forge create PrivacyVault.sol:PrivacyVault \
-  --constructor-args $VERIFIER 0x000000000022D473030F116dDEE9F6B43aC78BA3 \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-  --json | jq -r '.deployedTo')
-
-echo "Vault deployed at: $VAULT"
-
-# Deploy a mock ERC20 for testing
-TOKEN=$(forge create tests/mocks/MockERC20.sol:MockERC20 \
-  --constructor-args "Mock USDC" "mUSDC" 6 \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-  --json | jq -r '.deployedTo')
-
-echo "Mock token deployed at: $TOKEN"
-
-# Add token to allowlist
-cast send $VAULT "addAllowedToken(address)" $TOKEN \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+# Note the deployed addresses from output
 ```
 
-## Usage Examples
-
-### ERC20 Deposit (Simplified Path)
+### Terminal 3: Make a Deposit First
 
 ```bash
-# 1. Mint tokens to user
-cast send $TOKEN "mint(address,uint256)" 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 1000000000 \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+VAULT="<DEPLOYED_VAULT_ADDRESS>"
 
-# 2. Approve vault to spend tokens
-cast send $TOKEN "approve(address,uint256)" $VAULT 1000000000 \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-# 3. Deposit ERC20 tokens
-# commitment and nullifier are example values — in production, generate off-chain
-cast send $VAULT \
-  "depositERC20(address,uint256,bytes32,bytes32)" \
-  $TOKEN \
-  500000000 \
-  0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
-  0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-# 4. Check vault token balance
-cast call $VAULT "getTokenBalance(address)" $TOKEN \
-  --rpc-url http://127.0.0.1:8545
-```
-
-### Verify Backward Compatibility
-
-```bash
-# ETH deposit still works exactly as before
-# NOTE: Use small ETH values (0.0001 ETH) on Sepolia to conserve testnet funds
+# Deposit ETH to create a note
 cast send $VAULT \
   "deposit(bytes32,bytes32)" \
-  0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef \
-  0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe \
-  --value 0.0001ether \
+  0x1111111111111111111111111111111111111111111111111111111111111111 \
+  0x2222222222222222222222222222222222222222222222222222222222222222 \
+  --value 2ether \
   --rpc-url http://127.0.0.1:8545 \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-## Key Differences from ETH Flow
+### Terminal 4: Execute Investment
 
-| Aspect | ETH | ERC20 |
-|--------|-----|-------|
-| Deposit function | `deposit(commitment, nullifier) payable` | `depositERC20(token, amount, commitment, nullifier)` |
-| Withdraw function | `withdraw(proof, root, nullifier, change, recipient, amount)` | `withdrawERC20(proof, root, nullifier, change, actionHash, token, recipient, amount)` |
-| Fund transfer (deposit) | `msg.value` | `IERC20.safeTransferFrom()` |
-| Fund transfer (withdraw) | `recipient.call{value: amount}` | `IERC20.safeTransfer()` |
-| Balance check | `address(this).balance` | `tokenBalances[token]` |
-| Commitment hash | `H(nullifier, amount, salt)` | `H(nullifier, token, amount, salt)` |
-| actionHash | `keccak256(recipient, amount)` | `pedersen(recipient, token, amount)` |
-| Prerequisite | None | Token must be in allowlist |
+```bash
+# Get current root
+ROOT=$(cast call $VAULT "currentRoot()" --rpc-url http://127.0.0.1:8545)
+
+# Execute action with placeholder values
+cast send $VAULT \
+  "executeAction(bytes,bytes32,bytes32,bytes32,bytes32,uint256,bytes)" \
+  0x00 \
+  $ROOT \
+  0x3333333333333333333333333333333333333333333333333333333333333333 \
+  0x4444444444444444444444444444444444444444444444444444444444444444 \
+  0x5555555555555555555555555555555555555555555555555555555555555555 \
+  1000000000000000000 \
+  0x \
+  --rpc-url http://127.0.0.1:8545 \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+  --gas-limit 300000
+
+# Verify nullifier is spent
+cast call $VAULT \
+  "isNullifierUsed(bytes32)" \
+  0x3333333333333333333333333333333333333333333333333333333333333333 \
+  --rpc-url http://127.0.0.1:8545
+# Returns: true
+```
+
+---
+
+## Frontend Development
+
+### Run Development Server
+
+```bash
+cd ghostroute-ui
+npm install
+npm run dev
+```
+
+### Environment Variables
+
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_PRIVACY_VAULT_SEPOLIA=0x3e078e8af9aBaf8156Beca429A1d35B9398a2208
+NEXT_PUBLIC_API_URL=https://your-supabase-url/functions/v1
+```
+
+---
+
+## Common Issues
+
+### "Note not compatible with pool"
+
+- The note's token doesn't match either token0 or token1 in the pool
+- For ETH notes, ensure pool contains WETH
+
+### "Merkle root mismatch"
+
+- The root changed between proof generation and transaction submission
+- Retry with fresh root from contract
+
+### "Nullifier already spent"
+
+- The input note was already used in another transaction
+- Check localStorage for spent notes
+
+### "ActionHash verification failed"
+
+- Ensure frontend actionHash computation matches contract
+- Use `computeActionHash` view function to verify
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         USER FLOW                                   │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 1. SELECT POOL                                                      │
+│    - View pool list (ETH/USDC, ETH/DAI, etc.)                      │
+│    - Click "Invest" on compatible pool                              │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 2. SELECT NOTE                                                      │
+│    - Choose from unspent notes matching pool tokens                 │
+│    - View note balance and token type                               │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 3. ENTER AMOUNT                                                     │
+│    - Input investment amount                                        │
+│    - System calculates: change = note.value - investment - gas      │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 4. GENERATE PROOF                                                   │
+│    - Compute nullifierHash = keccak256(note.nullifier)             │
+│    - Compute changeCommitment = H(change_note)                      │
+│    - Compute actionHash = keccak256(poolId, ticks, amounts)         │
+│    - Generate ZK proof (placeholder for MVP)                        │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 5. EXECUTE TRANSACTION                                              │
+│    - Call vault.executeAction(proof, root, nullifier, ...)         │
+│    - Wait for confirmation                                          │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 6. UPDATE STATE                                                     │
+│    - Mark input note as spent (localStorage)                        │
+│    - Save change note (localStorage)                                │
+│    - Webhook updates Merkle tree (database)                         │
+└─────────────────────────────────────────────────────────────────────┘
+```

@@ -1,230 +1,317 @@
-# Data Model: ERC20 Deposit & Withdraw Support
+# Data Model: Uniswap Pool Investment via Privacy Vault
 
-**Feature**: `014-erc20-deposit-withdraw`  
-**Date**: 2026-02-06
+**Feature**: `014-uniswap-pool-investment`  
+**Date**: 2026-02-07
+
+---
+
+## Overview
+
+This data model extends the existing ERC20 deposit/withdraw model to support Uniswap v4 pool investments. The core entities are:
+
+1. **Pool Investment Transaction** - User investing notes into pools
+2. **ActionHash** - Binding pool parameters to ZK proofs
+3. **Change Note** - UTXO created from investment remainder
+4. **Webhook Events** - ActionExecuted event processing
 
 ---
 
 ## Core Entities
 
-### 1. PrivacyVault (Extended Contract)
+### 1. Pool Investment Parameters
 
-The PrivacyVault contract is extended with ERC20 support. No new contracts are created — the existing contract gains new state variables and functions.
+Parameters required to execute a privacy-preserving pool investment.
 
-**New State Variables**:
-
-| Variable | Type | Visibility | Description |
-|----------|------|------------|-------------|
-| `tokenBalances` | `mapping(address => uint256)` | `public` | Internal balance tracking per ERC20 token address. `address(0)` is NOT tracked (ETH uses `address(this).balance`). |
-| `allowedTokens` | `mapping(address => bool)` | `public` | Token allowlist. Only tokens in this mapping can be deposited/withdrawn. Controlled by `owner`. |
-| `PERMIT2` | `ISignatureTransfer` | `public immutable` | Permit2 SignatureTransfer contract reference. Set in constructor. |
-
-**Existing State Variables (unchanged)**:
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `nullifiers` | `mapping(bytes32 => bool)` | Tracks used nullifiers (shared by ETH and ERC20) |
-| `nextLeafIndex` | `uint256` | Current Merkle tree leaf position |
-| `owner` | `address immutable` | Contract owner |
-| `verifier` | `IZKVerifier` | ZK proof verifier reference |
-| `currentRoot` | `bytes32` | Current Merkle tree root |
-| `commitments` | `mapping(bytes32 => bool)` | Tracks inserted commitments |
-
----
-
-### 2. ERC20 Deposit Note
-
-An ERC20 deposit creates a commitment in the unified Merkle tree. The commitment binds the token address.
-
-**Fields** (private — known only to the depositor):
-
-| Field | Type (Solidity) | Type (Circuit/Noir) | Description |
-|-------|-----------------|---------------------|-------------|
-| `nullifier` | `bytes32` | `Field` | Unique secret preventing double-spend |
-| `token` | `address` | `Field` (as `asset_id`) | ERC20 token contract address |
-| `amount` | `uint256` | `Field` | Deposit amount in token's smallest unit |
-| `salt` | `bytes32` | `Field` (as `blinding`) | Random blinding factor for privacy |
-
-**Commitment**: `commitment = H(nullifier, token, amount, salt)` — computed off-chain by the user.
-
-**Relationships**:
-- Produces one `Leaf` in the Merkle tree (at `nextLeafIndex`)
-- Consumes one `Nullifier` (marks `nullifiers[nullifier] = true` to prevent reuse)
-- Updates `tokenBalances[token] += amount`
-
----
-
-### 3. ERC20 Withdrawal
-
-An ERC20 withdrawal spends a note and optionally creates a change note (UTXO model).
-
-**Public Inputs** (sent to the ZK verifier):
+**Fields (Frontend)**:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `root` | `bytes32` | Merkle tree root at time of proof generation |
-| `nullifierHash` | `bytes32` | Public nullifier hash (derived from private nullifier) |
-| `changeCommitment` | `bytes32` | Commitment for the change note (if any remaining balance) |
-| `actionHash` | `bytes32` | `pedersen(recipient, token, amount)` — verified by circuit |
-| `amount` | `uint256` | Amount being withdrawn |
+| `inputNote` | `Note` | The deposited note being spent |
+| `pool` | `EnrichedPool` | Target Uniswap v4 pool |
+| `investAmount` | `bigint` | Amount to invest (in note's token) |
+| `tickLower` | `number` | Lower tick bound for LP position |
+| `tickUpper` | `number` | Upper tick bound for LP position |
 
-**Transaction Parameters** (on-chain, plaintext):
+**Computed Values**:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `proof` | `bytes` | ZK proof data |
-| `token` | `address` | ERC20 token to withdraw |
-| `recipient` | `address` | Receiver of the tokens |
-| `amount` | `uint256` | Amount to transfer |
-
-**Relationships**:
-- Spends one nullifier (`nullifiers[nullifierHash] = true`)
-- Creates one change commitment in the Merkle tree
-- Transfers `amount` of `token` from vault to `recipient`
-- Updates `tokenBalances[token] -= amount`
+| `actionHash` | `0x${string}` | `keccak256(poolId, tickLower, tickUpper, amount0, amount1)` |
+| `changeNote` | `Note` | Remaining value after investment |
+| `nullifierHash` | `0x${string}` | `keccak256(inputNote.nullifier)` |
+| `changeCommitment` | `0x${string}` | Commitment for change note |
 
 ---
 
-### 4. Permit2 Deposit (Production Path)
+### 2. ActionHash Structure
 
-Uses Permit2's `SignatureTransfer` with witness binding.
+The actionHash binds pool parameters to the ZK proof, preventing front-running.
 
-**Permit Parameters**:
+**Components**:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `permit` | `ISignatureTransfer.PermitTransferFrom` | Token permissions (token, amount, nonce, deadline) |
-| `signature` | `bytes` | EIP-712 signature over permit + witness |
-| `commitment` | `bytes32` | Deposit commitment (bound into witness) |
-| `nullifier` | `bytes32` | Deposit nullifier (bound into witness) |
+| Component | Type (Solidity) | Type (Frontend) | Description |
+|-----------|-----------------|-----------------|-------------|
+| `poolId` | `bytes32` | `\`0x${string}\`` | Uniswap v4 pool identifier |
+| `tickLower` | `int24` | `number` | Lower tick of LP position |
+| `tickUpper` | `int24` | `number` | Upper tick of LP position |
+| `amount0Desired` | `uint256` | `bigint` | Token0 amount for position |
+| `amount1Desired` | `uint256` | `bigint` | Token1 amount for position |
 
-**Witness Structure** (signed by user, verified by Permit2):
-
+**Computation**:
 ```solidity
-struct DepositWitness {
-    bytes32 commitment;
-    bytes32 nullifier;
-}
+actionHash = keccak256(abi.encodePacked(
+    poolId,
+    tickLower,
+    tickUpper,
+    amount0Desired,
+    amount1Desired
+));
 ```
 
-**Relationships**:
-- User must have `token.approve(PERMIT2, type(uint256).max)` set (one-time)
-- Permit2 verifies signature and transfers tokens atomically
-- Witness binding prevents front-running / commitment substitution
-
 ---
 
-### 5. Token Allowlist Entry
+### 3. executeAction Parameters (On-Chain)
 
-**Fields**:
+Parameters passed to `PrivacyVault.executeAction()`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `token` | `address` | ERC20 token contract address |
-| `allowed` | `bool` | Whether deposits/withdrawals are permitted |
+| `proof` | `bytes` | ZK proof data (placeholder for MVP) |
+| `root` | `bytes32` | Merkle root at proof generation time |
+| `nullifierHash` | `bytes32` | Hash of input note's nullifier |
+| `changeCommitment` | `bytes32` | Commitment for change note |
+| `actionHash` | `bytes32` | Bound pool parameters hash |
+| `investAmount` | `uint256` | Amount being invested |
+| `uniswapParams` | `bytes` | Encoded pool parameters (reserved) |
 
-**State Transitions**:
-- `addAllowedToken(token)`: `allowedTokens[token] = true` (owner only)
-- `removeAllowedToken(token)`: `allowedTokens[token] = false` (owner only)
-- Note: Removing a token does NOT affect existing deposits — users can still withdraw tokens previously deposited.
+---
+
+### 4. EnrichedPool (Existing Entity - Extended)
+
+Pool data displayed in UI and used for investment.
+
+**Existing Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Pool ID (truncated for display) |
+| `fullPoolId` | `\`0x${string}\`` | Full bytes32 pool ID |
+| `fee` | `number` | Pool fee (in hundredths of bips) |
+| `tickSpacing` | `number` | Tick spacing for positions |
+| `hooks` | `Address` | Hook contract address |
+| `token0` | `TokenInfo` | First token info |
+| `token1` | `TokenInfo` | Second token info |
+| `sqrtPriceX96` | `bigint?` | Current sqrt price |
+| `tick` | `number?` | Current tick |
+| `liquidity` | `bigint?` | Total liquidity |
+| `chainId` | `SupportedChainId` | Network chain ID |
+
+**New Computed Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isCompatibleWithNote` | `(note: Note) => boolean` | Check if note token matches pool |
+
+---
+
+### 5. PoolInvestmentResult
+
+Result returned after investment transaction.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | `boolean` | Whether investment succeeded |
+| `transactionHash` | `string?` | Transaction hash if submitted |
+| `changeNote` | `Note?` | Created change note |
+| `error` | `string?` | Error message if failed |
+
+---
+
+### 6. ActionExecutedEvent (Webhook)
+
+Event emitted by contract after successful investment.
+
+**Solidity Event**:
+```solidity
+event ActionExecuted(
+    bytes32 indexed nullifierHash,
+    bytes32 changeCommitment,
+    bytes32 actionHash,
+    uint256 investAmount,
+    uint256 timestamp,
+    uint256 changeIndex
+);
+```
+
+**Webhook Payload**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chainId` | `number` | Network chain ID |
+| `vaultAddress` | `string` | PrivacyVault contract address |
+| `nullifierHash` | `string` | Spent nullifier hash |
+| `changeCommitment` | `string` | New commitment for change note |
+| `actionHash` | `string` | Action parameters hash |
+| `investAmount` | `string` | Amount invested (as string) |
+| `timestamp` | `number` | Block timestamp |
+| `changeIndex` | `number` | Leaf index of change commitment |
+| `blockNumber` | `number` | Block number of event |
 
 ---
 
 ## Entity Relationships
 
 ```
-User
-  │
-  ├── deposit ETH ──► Deposit Event ──► Merkle Leaf (commitment)
-  │                                        │
-  ├── depositERC20 ──► ERC20 Transfer ──► Merkle Leaf (commitment with token)
-  │                    + tokenBalances++     │
-  │                                          │
-  ├── depositWithPermit ──► Permit2 ──► ERC20 Transfer ──► Merkle Leaf
-  │                                    + tokenBalances++
-  │
-  ├── withdraw ETH ──► ZK Verify ──► ETH Transfer ──► Change Leaf
-  │                    + nullifier spent
-  │
-  └── withdrawERC20 ──► ZK Verify ──► ERC20 Transfer ──► Change Leaf
-                        + nullifier spent    + tokenBalances--
-
-Owner
-  │
-  ├── addAllowedToken(token) ──► allowedTokens[token] = true
-  └── removeAllowedToken(token) ──► allowedTokens[token] = false
+User Note (from deposit)
+    │
+    ├── Select Pool ──► EnrichedPool
+    │                      │
+    │                      ├── token0.id matches note.token?
+    │                      └── token1.id matches note.token?
+    │
+    ├── Calculate UTXO ──► investAmount + changeNote
+    │                         │
+    │                         └── changeCommitment = H(changeNote)
+    │
+    ├── Compute actionHash ──► keccak256(poolId, ticks, amounts)
+    │
+    └── executeAction(proof, root, nullifierHash, changeCommitment, actionHash, amount, params)
+           │
+           ├── Nullifier marked spent
+           ├── Change commitment added to tree
+           └── ActionExecuted event emitted
+                  │
+                  └── Webhook processes ──► Merkle tree updated
 ```
 
 ---
 
 ## State Transitions
 
-### ERC20 Deposit Flow
+### Pool Investment Flow
 
 ```
 INITIAL STATE:
-  nullifiers[nullifier] = false
-  tokenBalances[token] = X
+  inputNote.spent = false
+  nullifiers[nullifierHash] = false
   nextLeafIndex = N
   currentRoot = R₀
+  
+USER ACTIONS:
+  1. Select pool from UI
+  2. Enter investment amount
+  3. Review preview (investment + gas + change)
+  4. Confirm transaction
 
-AFTER depositERC20(token, amount, commitment, nullifier):
-  nullifiers[nullifier] = true
-  commitments[commitment] = true
-  tokenBalances[token] = X + amount
+AFTER executeAction():
+  inputNote.spent = true (localStorage)
+  nullifiers[nullifierHash] = true (on-chain)
   nextLeafIndex = N + 1
-  currentRoot = keccak256(R₀, commitment)
-  IERC20(token) transferred: user → vault (amount)
+  currentRoot = keccak256(R₀, changeCommitment)
+  changeNote created and saved (localStorage)
+  
+AFTER Webhook:
+  Merkle tree in DB updated with changeCommitment at index N
 ```
 
-### ERC20 Withdrawal Flow
+---
 
+## TypeScript Types
+
+### PoolInvestmentParams
+
+```typescript
+interface PoolInvestmentParams {
+  inputNote: Note;
+  pool: EnrichedPool;
+  investAmount: bigint;
+  tickLower: number;
+  tickUpper: number;
+  recipient?: `0x${string}`; // Defaults to vault for LP
+}
 ```
-INITIAL STATE:
-  nullifiers[nullifierHash] = false
-  tokenBalances[token] = Y
-  nextLeafIndex = M
-  currentRoot = R₁
 
-AFTER withdrawERC20(proof, root, nullifierHash, changeCommitment, actionHash, token, recipient, amount):
-  nullifiers[nullifierHash] = true
-  commitments[changeCommitment] = true
-  tokenBalances[token] = Y - amount
-  nextLeafIndex = M + 1
-  currentRoot = keccak256(R₁, changeCommitment)
-  IERC20(token) transferred: vault → recipient (amount)
+### UsePoolInvestmentReturn
+
+```typescript
+interface UsePoolInvestmentReturn {
+  invest: (params: PoolInvestmentParams) => Promise<PoolInvestmentResult>;
+  calculateInvestment: (note: Note, pool: EnrichedPool, amount: bigint) => InvestmentPreview;
+  isCompatiblePool: (pool: EnrichedPool, note: Note) => boolean;
+  isPending: boolean;
+  isConfirming: boolean;
+  isGeneratingProof: boolean;
+  error: string | null;
+}
+```
+
+### InvestmentPreview
+
+```typescript
+interface InvestmentPreview {
+  investAmount: bigint;
+  gasEstimate: bigint;
+  changeNote: Note;
+  changeCommitment: `0x${string}`;
+  actionHash: `0x${string}`;
+  isValid: boolean;
+  error?: string;
+}
 ```
 
 ---
 
 ## Validation Rules
 
-### Deposit Validations
-1. `commitment != bytes32(0)` — Invalid commitment
-2. `!nullifiers[nullifier]` — Nullifier already used
-3. `amount > 0` — Invalid token amount
-4. `nextLeafIndex < 1048576` — Tree at capacity
-5. `token != address(0)` — Must use ETH deposit for native ETH (ERC20 functions only)
-6. `allowedTokens[token]` — Token not in allowlist
-7. `msg.value == 0` — Cannot send ETH with ERC20 deposit
+### Investment Validations
 
-### Withdrawal Validations
-1. `amount > 0` — Invalid amount
-2. `token != address(0)` — Must use ETH withdraw for native ETH
-3. `tokenBalances[token] >= amount` — Insufficient token balance
-4. `!nullifiers[nullifierHash]` — Nullifier already spent
-5. `root == currentRoot` — Invalid Merkle root
-6. `verifier.verify(proof, publicInputs)` — ZK proof verification failed
-7. `changeCommitment != bytes32(0)` — Invalid change commitment
+1. `inputNote.spent === false` - Note must be unspent
+2. `inputNote.leafIndex !== undefined` - Note must have valid leafIndex
+3. `investAmount > 0` - Must invest positive amount
+4. `investAmount <= inputNote.value` - Cannot invest more than note value
+5. `investAmount + gasEstimate <= inputNote.value` - Must have enough for gas
+6. `isCompatiblePool(pool, inputNote)` - Token must match pool token
+7. `tickLower < tickUpper` - Valid tick range
+8. `tickLower % pool.tickSpacing === 0` - Tick aligned to spacing
+9. `tickUpper % pool.tickSpacing === 0` - Tick aligned to spacing
+
+### Proof Generation Validations
+
+1. Valid Merkle root from contract
+2. Valid nullifier from note
+3. Valid change commitment computed
+4. Valid actionHash computed
+
+### Transaction Validations (On-Chain)
+
+1. `verifier.verify(proof, publicInputs)` - ZK proof valid
+2. `!nullifiers[nullifierHash]` - Nullifier not spent
+3. `root == currentRoot` - Merkle root valid
+4. `actionHash != bytes32(0)` - Action hash present
+5. `changeCommitment != bytes32(0)` - Change commitment present
 
 ---
 
 ## Privacy Considerations
 
-1. **Unified Merkle tree**: ETH and ERC20 commitments share the same tree, maximizing the anonymity set. An observer cannot distinguish ETH deposits from ERC20 deposits by looking at the tree structure alone.
+1. **Action hash binding**: The actionHash is computed off-chain and verified on-chain via ZK proof, preventing front-running of pool parameters.
 
-2. **Token binding in commitment**: The token address is a private input to the circuit, embedded in the commitment hash. This prevents asset substitution attacks without revealing the token type on-chain until withdrawal.
+2. **No depositor-investor link**: The ZK proof proves knowledge of a valid note without revealing which deposit it came from.
 
-3. **Withdrawal reveals token**: When `withdrawERC20()` is called, the `token` parameter is plaintext on-chain. This is inherent — you must specify which token to transfer. The privacy guarantee is that the *source* (depositor) cannot be linked to the *destination* (withdrawer), not that the asset type is hidden at withdrawal time.
+3. **Change notes**: The change note commitment is public, but its contents (amount, nullifier) remain private until spent.
 
-4. **Internal balance tracking**: Using `tokenBalances` mapping instead of `balanceOf()` prevents manipulation via direct token transfers (airdrops) and rebasing tokens.
+4. **Pool visibility**: The pool being invested in is NOT revealed on-chain in the current implementation (executeAction only emits actionHash). In full production with PrivacyLiquidityHook integration, the pool would be visible when liquidity is added.
+
+5. **Token inference**: If the investment token matches pool.token0 or pool.token1, the token type can be inferred. This is acceptable as the privacy guarantee is source-destination unlinkability, not asset type hiding.
+
+---
+
+## Migration Notes
+
+This feature builds on existing entities:
+
+- **Note** entity (from deposit) is unchanged
+- **useNotes** hook is reused for note selection
+- **useUTXOMath** is extended for investment calculations
+- **Webhook** is extended with ActionExecuted handler
+- **PRIVACY_VAULT_ABI** already includes executeAction

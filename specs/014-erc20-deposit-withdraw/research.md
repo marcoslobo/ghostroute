@@ -1,158 +1,351 @@
-# Research: ERC20 Deposit & Withdraw Support
+# Research: Uniswap Pool Investment via Privacy Vault
 
-**Feature**: `014-erc20-deposit-withdraw`  
-**Date**: 2026-02-06
+**Feature Branch**: `014-uniswap-pool-investment`  
+**Date**: 2026-02-07
 
 ---
 
-## Decision 1: SafeERC20 Pattern for Token Transfers
+## Previous Research (ERC20 Deposit/Withdraw)
 
-**Decision**: Use OpenZeppelin's `SafeERC20` library (v5.x) with `safeTransfer` and `safeTransferFrom` for all ERC20 interactions.
+The following decisions from the ERC20 feature are still valid and apply to pool investment:
+
+- **SafeERC20 Pattern**: Use OpenZeppelin's SafeERC20 for token transfers
+- **Token Allowlist**: Block fee-on-transfer and rebasing tokens
+- **Permit2 Integration**: Use SignatureTransfer for production path
+- **Balance Tracking**: Internal accounting with `tokenBalances` mapping
+- **Reentrancy Protection**: CEI + nonReentrant + allowlist
+- **Commitment Structure**: `H(nullifier, token, amount, salt)`
+
+---
+
+## New Research: Pool Investment Integration
+
+### Decision 1: executeAction as Primary Entry Point
+
+**Decision**: Use the existing `PrivacyVault.executeAction()` function (lines 280-365) as the primary entry point for pool investments.
 
 **Rationale**:
-- SafeERC20's `_callOptionalReturn` handles three token types: standard (returns `true`), non-compliant like USDT (returns nothing), and failing (returns `false`).
-- The project already has OpenZeppelin v5.0.2 available via the remapping: `@openzeppelin/contracts/=lib/v4-periphery/lib/v4-core/lib/openzeppelin-contracts/contracts/`
-- `try/catch` is inferior because it cannot detect `return false` or handle missing return values.
+- Already implements ZK proof verification
+- Handles nullifier double-spend prevention
+- Updates Merkle tree with change commitments
+- Emits ActionExecuted event for webhook processing
+- Currently only emits event (no actual Uniswap call) - sufficient for MVP
 
-**Import paths**:
+**Current executeAction Signature**:
 ```solidity
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-```
-
-**Alternatives considered**:
-- Raw `IERC20.transfer()` / `IERC20.transferFrom()`: Rejected — fails on USDT and other non-standard tokens.
-- `try/catch` wrapping: Rejected — cannot handle missing return values, adds code complexity.
-- Custom safe transfer library: Rejected — no advantage over battle-tested OpenZeppelin implementation.
-
----
-
-## Decision 2: Fee-on-Transfer and Rebasing Token Strategy
-
-**Decision**: Block fee-on-transfer and rebasing tokens. Implement a token allowlist (`mapping(address => bool) public allowedTokens`) controlled by the contract owner.
-
-**Rationale**:
-- Fee-on-transfer tokens break the commitment scheme: `H(nullifier, token, amount, salt)` would contain `amount = 100` but the vault only receives 98 tokens. This breaks ZK proof soundness.
-- Rebasing tokens (stETH) change the vault balance without deposits/withdrawals, creating extractable surplus or deficit.
-- All major privacy protocols (Tornado Cash, Railgun) use allowlists for this reason.
-- The privacy vault's UTXO model requires exact amount matching between commitment and actual balance.
-
-**Alternatives considered**:
-- Balance-before/after check pattern: Rejected for privacy context — user must know exact received amount before generating commitment off-chain, creating timing attack vectors with variable fees.
-- Support all tokens without restriction: Rejected — introduces critical accounting bugs.
-
----
-
-## Decision 3: Permit2 Integration Approach
-
-**Decision**: Use Permit2's `SignatureTransfer` (specifically `permitWitnessTransferFrom`) for the production deposit path. Maintain a simplified `deposit()` with standard `transferFrom` for testing.
-
-**Rationale**:
-- **SignatureTransfer** leaves zero on-chain state (no `allowance[]` mapping leakage), preserving privacy. AllowanceTransfer stores `allowance[owner][token][spender]` which reveals user-to-vault relationships.
-- `permitWitnessTransferFrom` binds the deposit commitment to the Permit2 signature, preventing front-running attacks where someone substitutes a different commitment.
-- Each transfer uses a unique, single-use nonce — no dangling approvals if vault is compromised.
-- Gas: ~92,900 for SignatureTransfer vs ~132,900 for first-time AllowanceTransfer.
-
-**Alternatives considered**:
-- AllowanceTransfer (`permit` + `transferFrom`): Rejected — leaks on-chain state via allowance mapping, creates dangling approval risk, no witness binding.
-- Direct `transferFrom` only (no Permit2): Rejected for production path — requires users to send a separate approval transaction, worse UX.
-- Both AllowanceTransfer and SignatureTransfer: Rejected — unnecessary complexity.
-
-**Implementation notes**:
-- The existing `Permit2Lib.sol` has incomplete `SignatureTransfer` types (defined as opaque `type ... is bytes32` aliases). Must be replaced with proper `ISignatureTransfer` interface.
-- User prerequisite: one-time `token.approve(PERMIT2, type(uint256).max)` — most DeFi users already have this from Uniswap usage.
-- The `depositWithPermit` function signature changes to accept `PermitTransferFrom` instead of `PermitSingle`.
-
----
-
-## Decision 4: ERC20 Withdrawal actionHash Design
-
-**Decision**: Include the token address in the actionHash for withdrawals: the circuit computes `actionHash = pedersen(recipient, asset_id, amount)`. The contract receives `actionHash` as a ZK-verified public input and does NOT recompute Pedersen on-chain.
-
-**Rationale**:
-- Without binding `token` into the actionHash, a malicious party could redirect a withdrawal proof meant for USDC to drain WETH instead.
-- The circuit already has `asset_id` in the Note struct and constrains `note.asset_id == change_note.asset_id`. Adding it to the actionHash closes the binding loop.
-- Pedersen hashing is cheap in ZK circuits but expensive on-chain. The ZK proof guarantees that `actionHash == pedersen(recipient, token, amount)`, so the contract can trust the verified public input.
-
-**Contract pattern**:
-```solidity
-function withdrawERC20(
+function executeAction(
     bytes calldata proof,
     bytes32 root,
     bytes32 nullifierHash,
     bytes32 changeCommitment,
-    bytes32 actionHash,    // Pedersen hash verified by circuit
-    address token,
-    address payable recipient,
-    uint256 amount
-) external nonReentrant { ... }
+    bytes32 actionHash,
+    uint256 investAmount,
+    bytes calldata uniswapParams  // Currently unused but reserved
+) external nonReentrant
 ```
 
 **Alternatives considered**:
-- Contract recomputes keccak256 actionHash: Rejected for the production path — creates hash mismatch with circuit's Pedersen hash. However, the simplified `withdraw()` for ETH currently uses `keccak256(abi.encodePacked(recipient, amount))`, which is acceptable for the testing path with a mock verifier.
-- Token address as separate public input: Possible but redundant — binding it into actionHash is cleaner and the circuit already enforces it.
+- Direct pool interaction: Rejected - bypasses privacy guarantees
+- New executePoolInvestment function: Rejected - unnecessary duplication
 
 ---
 
-## Decision 5: Balance Tracking Strategy
+### Decision 2: ActionHash Computation for Pools
 
-**Decision**: Use internal accounting (`mapping(address => uint256) public tokenBalances`) alongside the allowlist. For ETH, continue using `address(this).balance`.
+**Decision**: Compute actionHash as `keccak256(abi.encodePacked(poolId, tickLower, tickUpper, amount0Desired, amount1Desired))` to match the contract's `computeActionHash` function.
 
 **Rationale**:
-- Internal accounting is immune to external manipulation (airdrops, rebasing).
-- `IERC20.balanceOf(address(this))` requires an external call (~2,600 gas for cold SLOAD) and is vulnerable to direct token transfers inflating the balance.
-- Railgun and Aztec use internal balance tracking.
-- The allowlist already prevents fee-on-transfer tokens, so the internal accounting will always be accurate for allowed tokens.
+- Must match exactly between frontend and contract for ZK proof validity
+- Binds the investment parameters to the proof (prevents front-running/tampering)
+- Already implemented in PrivacyVault.sol lines 367-388
 
-**Deposit**: `tokenBalances[token] += amount;`
-**Withdraw**: `require(tokenBalances[token] >= amount); tokenBalances[token] -= amount;`
+**Contract Implementation**:
+```solidity
+function computeActionHash(
+    bytes32 poolId,
+    int24 tickLower,
+    int24 tickUpper,
+    uint256 amount0Desired,
+    uint256 amount1Desired
+) external pure returns (bytes32 actionHash) {
+    return keccak256(abi.encodePacked(
+        poolId,
+        tickLower,
+        tickUpper,
+        amount0Desired,
+        amount1Desired
+    ));
+}
+```
 
-**Alternatives considered**:
-- `IERC20.balanceOf(address(this))` only: Rejected — vulnerable to direct transfers and rebasing.
-- No balance tracking (rely on transfer failure): Rejected — poor error messages, no view function for balance queries.
+**Frontend Implementation Needed**:
+```typescript
+import { keccak256, encodePacked } from 'viem';
+
+function computeActionHash(
+  poolId: `0x${string}`,
+  tickLower: number,
+  tickUpper: number,
+  amount0Desired: bigint,
+  amount1Desired: bigint
+): `0x${string}` {
+  return keccak256(
+    encodePacked(
+      ['bytes32', 'int24', 'int24', 'uint256', 'uint256'],
+      [poolId, tickLower, tickUpper, amount0Desired, amount1Desired]
+    )
+  );
+}
+```
 
 ---
 
-## Decision 6: Reentrancy Protection for ERC20 Transfers
+### Decision 3: Pool Selection Strategy
 
-**Decision**: Defense-in-depth with three layers: (1) CEI (Checks-Effects-Interactions) ordering, (2) `nonReentrant` modifier, (3) token allowlist.
+**Decision**: Allow single-sided liquidity provision initially, matching note token to one side of the pool.
 
 **Rationale**:
-- CEI ensures all state mutations (nullifier marking, Merkle tree update) happen before external `safeTransfer` call. A reentrant call would fail at "Nullifier already spent".
-- `nonReentrant` (existing custom implementation) provides additional protection.
-- Token allowlist ensures only audited tokens interact with the vault, preventing malicious token contracts with reentrant `transfer()` hooks.
+- Simplifies UX - user doesn't need multiple token notes
+- Uniswap v4 supports concentrated liquidity with asymmetric positions
+- For MVP, just need to prove the concept works
+
+**Token Matching Logic**:
+```typescript
+function isPoolCompatible(pool: EnrichedPool, noteToken: string): boolean {
+  const isETH = noteToken === '0x0000000000000000000000000000000000000000';
+  const weth = getWETHAddress(pool.chainId);
+  
+  // ETH notes can invest in pools with WETH or native ETH
+  if (isETH) {
+    return pool.token0.id === weth || pool.token1.id === weth;
+  }
+  
+  // ERC20 notes must match token0 or token1
+  return pool.token0.id.toLowerCase() === noteToken.toLowerCase() || 
+         pool.token1.id.toLowerCase() === noteToken.toLowerCase();
+}
+```
 
 **Alternatives considered**:
-- EIP-1153 transient storage lock: Already used in PrivacyLiquidityHook, but the existing `ReentrancyGuard` is sufficient for the vault.
-- CEI only (no reentrancy guard): Rejected — defense-in-depth is required by constitution's security-first principle.
+- Require both tokens: Rejected - complex UX, requires note aggregation
+- Automatic token swap: Rejected - adds slippage risk, complexity
 
 ---
 
-## Decision 7: Backward Compatibility Approach
+### Decision 4: Proof Generation Strategy
 
-**Decision**: Keep existing `deposit()` (ETH-only, simplified) and `withdraw()` (ETH-only) functions unchanged. Add new functions: `depositERC20()` (simplified, transferFrom), `withdrawERC20()`, and update `depositWithPermit()` (production, Permit2).
+**Decision**: Use placeholder proof for MVP (works with MockZKVerifier), with architecture ready for real Noir proofs.
 
 **Rationale**:
-- All existing tests must continue to pass without modification.
-- The simplified ETH functions serve as the testing/development path.
-- New ERC20 functions follow the same patterns but handle token transfers.
-- `depositWithPermit()` already exists but needs its ERC20 transfer stub completed.
+- MockZKVerifier is currently deployed and accepts any proof
+- Real ZK circuits (Noir) require more development time
+- Current architecture already supports proof bytes parameter
 
-**Alternatives considered**:
-- Unified `deposit(token, amount, ...)` replacing the existing one: Rejected — breaks backward compatibility with existing tests and scripts.
-- Token parameter added to existing `withdraw()`: Rejected — changes function signature, breaks existing callers.
+**Proof Parameters Required**:
+```typescript
+interface ProofInputs {
+  // Private inputs (not revealed on-chain)
+  inputNote: {
+    nullifier_secret: Uint8Array;
+    blinding: Uint8Array;
+    amount: bigint;
+    token: string;
+  };
+  merklePath: string[];
+  leafIndex: number;
+  
+  // Public inputs (verified on-chain)
+  root: `0x${string}`;
+  nullifierHash: `0x${string}`;
+  changeCommitment: `0x${string}`;
+  actionHash: `0x${string}`;
+  investAmount: bigint;
+}
+```
 
 ---
 
-## Decision 8: Commitment Hash Structure for ERC20
+### Decision 5: Webhook Event Processing
 
-**Decision**: ERC20 commitment hash is `H(nullifier, token, amount, salt)` — the token address is a mandatory component of the commitment for ERC20 notes. For ETH, the existing `H(nullifier, amount, salt)` is preserved for backward compatibility, with `token = address(0)` implied.
+**Decision**: Extend the existing webhook to handle `ActionExecuted` events, adding change commitments to the Merkle tree.
 
 **Rationale**:
-- Binding the token address into the commitment prevents a note created for USDC from being spent as WETH.
-- The circuit's `Note.asset_id` field already supports this — it just needs to be populated with the token address.
-- For ETH notes, `asset_id = address(0)` maintains backward compatibility.
+- Webhook already processes Deposit events successfully
+- Same infrastructure can handle ActionExecuted
+- Change notes need to be in Merkle tree for future spending
 
-**Alternatives considered**:
-- Separate Merkle trees per token: Rejected — reduces anonymity set, contradicts constitution ("unified Merkle Tree structure").
-- Token not in commitment (verified separately): Rejected — weaker binding, creates asset substitution attack vector.
+**Event Signature**:
+```solidity
+event ActionExecuted(
+    bytes32 indexed nullifierHash,
+    bytes32 changeCommitment,
+    bytes32 actionHash,
+    uint256 investAmount,
+    uint256 timestamp,
+    uint256 changeIndex
+);
+```
+
+**Handler Implementation**:
+```typescript
+async function handleActionExecuted(payload: ActionExecutedPayload): Promise<void> {
+  const { chainId, vaultAddress, changeCommitment, changeIndex, blockNumber } = payload;
+  
+  // Get or create vault
+  const vault = await vaultService.getOrCreateVault(chainId, vaultAddress);
+  const tree = vaultService.getTree(vault.id);
+  
+  // Create leaf hash and insert
+  const leafHash = createLeafHash(changeCommitment, changeIndex);
+  tree.insert(changeIndex, leafHash);
+  
+  // Update vault root
+  await vaultService.updateVaultRoot(chainId, vaultAddress, tree.root, blockNumber);
+}
+```
+
+---
+
+### Decision 6: UI Component Architecture
+
+**Decision**: Create a new `PoolInvestmentModal` component that opens when clicking "Invest" on a pool row, using existing hooks.
+
+**Rationale**:
+- Modal pattern allows focused interaction
+- Reuses existing InvestmentForm logic
+- Integrates naturally with pool list
+
+**Component Hierarchy**:
+```
+UniswapV4PoolsClient
+  └── PoolRow
+        └── InvestButton (opens modal)
+              └── PoolInvestmentModal
+                    ├── NoteSelector (from useNotes)
+                    ├── AmountInput
+                    ├── InvestmentPreview (from useUTXOMath)
+                    └── ConfirmButton (calls usePoolInvestment)
+```
+
+---
+
+### Decision 7: UTXO Math for Investment
+
+**Decision**: Reuse existing `calculateUTXO` function with investment-specific parameters.
+
+**Current Implementation (useUTXOMath.ts)** already handles:
+- Input note selection
+- Investment amount calculation
+- Gas estimation
+- Change note creation
+- Change commitment computation
+
+**Enhancement Needed**:
+Add pool-specific actionHash computation:
+```typescript
+interface PoolInvestmentParams extends UTXOMathParams {
+  poolId: `0x${string}`;
+  tickLower: number;
+  tickUpper: number;
+}
+```
+
+---
+
+### Decision 8: Error Handling Strategy
+
+**Decision**: Implement comprehensive error handling with user-friendly messages at each stage.
+
+**Error Categories**:
+1. **Pre-submission errors**
+   - Insufficient funds in note
+   - Invalid pool parameters
+   - Note without leafIndex (legacy notes)
+
+2. **Proof generation errors**
+   - Circuit compilation failure
+   - Timeout during proof generation
+
+3. **Transaction errors**
+   - ZK proof verification failed
+   - Nullifier already spent
+   - Invalid Merkle root
+
+4. **Post-transaction errors**
+   - Webhook processing failure (non-blocking)
+
+---
+
+### Decision 9: Gas Estimation
+
+**Decision**: Use fixed gas estimate of 300,000 gas for investment transactions.
+
+**Rationale**:
+- executeAction is complex (ZK verification + Merkle update)
+- Fixed estimate is safer than dynamic estimation
+- Current withdraw uses 800,000 gas; investment should be similar
+
+**Implementation**:
+```typescript
+const INVESTMENT_GAS_LIMIT = 300_000n;
+const INVESTMENT_GAS_BUFFER = 1.2; // 20% buffer
+
+function estimateInvestmentGas(gasPrice: bigint): bigint {
+  return BigInt(Math.floor(Number(INVESTMENT_GAS_LIMIT * gasPrice) * INVESTMENT_GAS_BUFFER));
+}
+```
+
+---
+
+### Decision 10: Integration with Existing Pool List
+
+**Decision**: Modify `UniswapV4PoolsClient` to pass pool data to investment modal instead of direct liquidity addition.
+
+**Current Flow**:
+```
+Click "+ Liquidity" → handleAddLiquidity() → addLiquidity() (direct)
+```
+
+**New Flow**:
+```
+Click "Invest" → setSelectedPool() → Open PoolInvestmentModal → handleInvest() → executeAction()
+```
+
+**Key Change**:
+Replace direct `addLiquidity` with privacy-preserving `executeAction` flow that uses notes.
+
+---
+
+## Unresolved Questions
+
+1. **Full Uniswap Integration**: Currently executeAction only emits event. Should we implement actual PrivacyLiquidityHook integration?
+   - **Decision**: Defer to Phase 2. MVP proves the UTXO + ZK proof flow works.
+
+2. **Real ZK Proofs**: When should we switch from MockZKVerifier to real Noir proofs?
+   - **Decision**: After MVP validation. Current architecture supports both.
+
+3. **Multi-token Positions**: How to handle pools requiring two different tokens?
+   - **Decision**: Phase 2 feature. Single-sided liquidity for MVP.
+
+---
+
+## Dependencies
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| wagmi | ^2.x | Contract interactions |
+| viem | ^2.x | Encoding/hashing utilities |
+| @noir-lang/barretenberg | ^2.x | Future proof generation |
+
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `ghostroute-ui/src/components/UniswapV4PoolsClient.tsx` | Add Invest button, open modal |
+| `ghostroute-ui/src/components/utxo/PoolInvestmentModal.tsx` | New component |
+| `ghostroute-ui/src/hooks/utxo/usePoolInvestment.ts` | New hook |
+| `ghostroute-ui/src/utils/utxo/actionHash.ts` | New utility |
+| `ghostroute-zk-api/supabase/functions/_shared/adapters/listener-adapter.ts` | Add ActionExecuted |
+| `ghostroute-zk-api/supabase/functions/_shared/handlers/webhook.ts` | Add handleActionExecuted |

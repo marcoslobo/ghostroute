@@ -10,6 +10,7 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   type?: 'button' | 'submit' | 'reset';
+  title?: string;
 }
 
 export function Button({
@@ -20,6 +21,7 @@ export function Button({
   size = 'md',
   className = '',
   type = 'button',
+  title,
 }: ButtonProps) {
   // Base styles - applied to all buttons
   const baseClasses = 'rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -49,6 +51,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={buttonClasses}
+      title={title}
     >
       {children}
     </button>
