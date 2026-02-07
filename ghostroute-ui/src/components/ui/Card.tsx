@@ -6,29 +6,38 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
-  style?: React.CSSProperties;
+  variant?: 'default' | 'glass' | 'glow';
 }
 
-export function Card({ children, className = '', padding = 'md', style }: CardProps) {
-  const paddingValues: Record<string, string> = {
-    none: '0',
-    sm: '0.75rem',
-    md: '1.25rem',
-    lg: '2rem',
+export function Card({
+  children,
+  className = '',
+  padding = 'md',
+  variant = 'default',
+}: CardProps) {
+  // Base styles - applied to all cards
+  const baseClasses = 'rounded-lg';
+
+  // Variant styles - background, border, shadow
+  const variantClasses = {
+    default: 'bg-ghost-card border border-ghost-border shadow-card',
+    glass: 'bg-ghost-card/60 backdrop-blur border border-ghost-border/50',
+    glow: 'bg-ghost-card border border-ghost-cyan/30 shadow-glow',
   };
 
+  // Padding styles
+  const paddingClasses = {
+    none: '',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8',
+  };
+
+  // Combine all classes
+  const cardClasses = `${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${className}`;
+
   return (
-    <div
-      className={className}
-      style={{
-        background: 'white',
-        borderRadius: '0.75rem',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #f3f4f6',
-        padding: paddingValues[padding],
-        ...style,
-      }}
-    >
+    <div className={cardClasses}>
       {children}
     </div>
   );

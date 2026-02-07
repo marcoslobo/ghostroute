@@ -4,6 +4,9 @@ import React from 'react';
 import { useAccount } from 'wagmi';
 import { UTXOMathResult } from '@/types/utxo';
 import { useUTXOMath, useNotes } from '@/hooks/utxo';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/Card';
 
 interface TransactionPreviewProps {
   transaction: UTXOMathResult;
@@ -52,54 +55,62 @@ export function TransactionPreview({ transaction, actionType = 'uniswap-v4-swap'
   const isProcessing = isPending || isConfirming;
 
   return (
-    <div className="border rounded p-4">
+    <Card padding="md">
       <h3 className="font-medium mb-4">Confirm Transaction</h3>
 
-      <div className="mb-4">
-        <h4 className="text-sm font-medium text-gray-600 mb-2">Investment Details</h4>
-        <div className="flex justify-between text-sm mb-1">
-          <span>Amount:</span>
-          <span>{formatETH(transaction.investmentAmount)} ETH</span>
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">Investment Details</h4>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Amount:</span>
+            <span>{formatETH(transaction.investmentAmount)} ETH</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Action:</span>
+            <span>{actionType}</span>
+          </div>
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Action:</span>
-          <span>{actionType}</span>
+
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">Change Note</h4>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Amount:</span>
+            <span>{formatETH(transaction.changeNote.value)} ETH</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <span>Commitment: </span>
+            <code className="bg-ghost-card px-1 rounded break-all">{transaction.changeCommitment}</code>
+          </div>
         </div>
+
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">Gas</h4>
+          <div className="flex justify-between text-sm">
+            <span>Estimated:</span>
+            <span>{formatETH(transaction.gasEstimate)} ETH</span>
+          </div>
+        </div>
+
+        {error && (
+          <Alert variant="error">
+            <span className="text-sm">{error}</span>
+          </Alert>
+        )}
+
+        {!address ? (
+          <Alert variant="warning">
+            <p className="text-center text-sm">Connect your wallet to submit</p>
+          </Alert>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={isProcessing}
+            className="w-full"
+          >
+            {isPending ? 'Confirm in wallet...' : isConfirming ? 'Confirming...' : 'Submit Transaction'}
+          </Button>
+        )}
       </div>
-
-      <div className="mb-4">
-        <h4 className="text-sm font-medium text-gray-600 mb-2">Change Note</h4>
-        <div className="flex justify-between text-sm mb-1">
-          <span>Amount:</span>
-          <span>{formatETH(transaction.changeNote.value)} ETH</span>
-        </div>
-        <div className="text-xs">
-          <span>Commitment: </span>
-          <code className="bg-gray-100 px-1 rounded break-all">{transaction.changeCommitment}</code>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <h4 className="text-sm font-medium text-gray-600 mb-2">Gas</h4>
-        <div className="flex justify-between text-sm">
-          <span>Estimated:</span>
-          <span>{formatETH(transaction.gasEstimate)} ETH</span>
-        </div>
-      </div>
-
-      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-
-      {!address ? (
-        <div className="text-yellow-600 text-sm mb-4">Connect your wallet to submit</div>
-      ) : (
-        <button
-          onClick={handleSubmit}
-          disabled={isProcessing}
-          className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          {isPending ? 'Confirm in wallet...' : isConfirming ? 'Confirming...' : 'Submit Transaction'}
-        </button>
-      )}
-    </div>
+    </Card>
   );
 }

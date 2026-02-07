@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { useAccount } from 'wagmi';
-import { useAddLiquidity, useSwap, NETWORK_CONFIG, type SupportedChainId } from '@/lib/uniswap-v4';
+import { useAddLiquidity, NETWORK_CONFIG, type SupportedChainId } from '@/lib/uniswap-v4';
 import { EnrichedPool } from '@/components/UniswapPoolsSection';
 import { parseUnits, formatUnits } from 'viem';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 
 interface UniswapV4PoolsClientProps {
   pools: EnrichedPool[];
@@ -58,13 +60,6 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chai
     isSuccess: addLiquiditySuccess,
     error: addLiquidityError
   } = useAddLiquidity();
-  const {
-    swap,
-    isPending: isSwapping,
-    isSuccess: swapSuccess,
-    error: swapError
-  } = useSwap();
-
   const networkConfig = NETWORK_CONFIG[chainId];
 
   const handleAddLiquidity = async (pool: EnrichedPool) => {
@@ -84,20 +79,13 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chai
     });
   };
 
-  const handleSwap = async (pool: EnrichedPool) => {
+  const handleRemoveLiquidity = async (pool: EnrichedPool) => {
     if (!isConnected) {
-      alert('Please connect your wallet to swap.');
+      alert('Please connect your wallet to remove liquidity.');
       return;
     }
-    const amountIn = BigInt(parseUnits('0.0001', pool.token0.decimals));
-    const amountOutMinimum = BigInt(parseUnits('0.00005', pool.token1.decimals));
-
-    await swap({
-      tokenIn: pool.token0.id,
-      tokenOut: pool.token1.id,
-      amountIn,
-      amountOutMinimum,
-    });
+    // TODO: Implement remove liquidity functionality
+    alert('Remove liquidity functionality coming soon!');
   };
 
   if (pools.length === 0) {
@@ -169,40 +157,35 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chai
                 )}
               </td>
               <td className="py-3 px-4 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-3 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
                     onClick={() => handleAddLiquidity(pool)}
                     disabled={isAddingLiquidity || !isConnected}
-                    title={!isConnected ? 'Connect wallet first' : 'Add liquidity to this pool'}
                   >
                     {isAddingLiquidity ? '...' : '+ Liquidity'}
-                  </button>
-                  <button
-                    className="bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-3 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    onClick={() => handleSwap(pool)}
-                    disabled={isSwapping || !isConnected}
-                    title={!isConnected ? 'Connect wallet first' : 'Swap tokens'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleRemoveLiquidity(pool)}
+                    disabled={!isConnected}
                   >
-                    {isSwapping ? '...' : 'Swap'}
-                  </button>
-                  <a
-                    href={`${networkConfig.blockExplorer}/tx/${pool.transactionHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-1.5 px-3 rounded text-xs transition-colors"
-                    title="View pool creation transaction"
-                  >
-                    View Tx
-                  </a>
+                    - Liquidity
+                  </Button>
                 </div>
-                {(addLiquiditySuccess || swapSuccess) && (
-                  <p className="text-green-500 text-xs mt-1">Transaction Successful!</p>
+                {addLiquiditySuccess && (
+                  <Alert variant="success" className="mt-2">
+                    <span className="text-xs">Liquidity added successfully!</span>
+                  </Alert>
                 )}
-                {(addLiquidityError || swapError) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Failed: {addLiquidityError?.message || swapError?.message}
-                  </p>
+                {addLiquidityError && (
+                  <Alert variant="error" className="mt-2">
+                    <span className="text-xs">
+                      Failed: {addLiquidityError?.message}
+                    </span>
+                  </Alert>
                 )}
               </td>
             </tr>

@@ -13,6 +13,9 @@ import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { exportNotes, importNotes } from '@/services/noteStorage';
 import { useNotes } from '@/hooks/utxo/useNotes';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/Card';
 
 export function BackupSection() {
   const { address } = useAccount();
@@ -100,75 +103,72 @@ export function BackupSection() {
 
   if (!address) {
     return (
-      <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-6">
+      <Card padding="md">
         <h3 className="text-lg font-semibold mb-2">💾 Backup & Recovery</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           Connect your wallet to manage backups
         </p>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+    <Card padding="md">
       <h3 className="text-lg font-semibold mb-4">💾 Backup & Recovery</h3>
 
       {/* Warning Banner */}
-      <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <Alert variant="error" className="mb-6">
         <div className="flex items-start gap-3">
           <span className="text-2xl">⚠️</span>
           <div>
-            <h4 className="font-semibold text-red-900 dark:text-red-200 mb-1">
+            <h4 className="font-semibold mb-1">
               Backup is CRITICAL
             </h4>
-            <p className="text-sm text-red-800 dark:text-red-300">
+            <p className="text-sm">
               Without a backup, if you lose access to this browser, you will{' '}
               <strong>permanently lose access to your funds</strong>. There is no recovery
               mechanism.
             </p>
           </div>
         </div>
-      </div>
+      </Alert>
 
       {/* Export Section */}
       <div className="mb-6">
         <h4 className="font-medium mb-2">📥 Export Backup</h4>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Download all your notes as a JSON file. Store it securely!
         </p>
-        <button
-          onClick={handleExport}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-        >
+        <Button onClick={handleExport} variant="primary">
           Download Backup
-        </button>
+        </Button>
       </div>
 
-      <hr className="border-gray-300 dark:border-gray-700 my-6" />
+      <hr className="border-ghost-border my-6" />
 
       {/* Import Section */}
       <div>
         <h4 className="font-medium mb-2">📤 Import Backup</h4>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Restore your notes from a backup file
         </p>
 
         {/* File Upload */}
         <div className="mb-3">
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Upload Backup File
           </label>
           <input
             type="file"
             accept=".json"
             onChange={handleFileUpload}
-            className="block w-full text-sm text-gray-900 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 dark:hover:file:bg-blue-900/30"
+            className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ghost-cyan/10 file:text-ghost-cyan hover:file:bg-ghost-cyan/20 file:transition-colors"
           />
         </div>
 
         {/* Or paste JSON */}
         <div className="mb-3">
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Or Paste Backup JSON
           </label>
           <textarea
@@ -176,47 +176,49 @@ export function BackupSection() {
             onChange={(e) => setImportText(e.target.value)}
             placeholder='[{"commitment": "0x...", "nullifier": "0x...", ...}]'
             rows={6}
-            className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-gray-700"
+            className="w-full p-3 border rounded-lg bg-input text-foreground font-mono text-xs focus:outline-none focus:ring-2 focus:ring-ghost-cyan focus:border-ghost-cyan border-border placeholder-muted-foreground"
           />
         </div>
 
         {/* Error Display */}
         {importError && (
-          <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300">
-            ❌ {importError}
-          </div>
+          <Alert variant="error" className="mb-3">
+            <span className="text-sm">❌ {importError}</span>
+          </Alert>
         )}
 
         {/* Success Display */}
         {importSuccess && (
-          <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300">
-            ✅ Backup imported successfully!
-          </div>
+          <Alert variant="success" className="mb-3">
+            <span className="text-sm">✅ Backup imported successfully!</span>
+          </Alert>
         )}
 
         {/* Import Button */}
-        <button
+        <Button
           onClick={handleImport}
           disabled={!importText.trim()}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+          variant="primary"
         >
           Import Backup
-        </button>
+        </Button>
       </div>
 
       {/* Security Tips */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2 text-sm">
-          💡 Security Best Practices
-        </h4>
-        <ul className="text-xs text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
-          <li>Store backups in multiple secure locations</li>
-          <li>Use a password manager (1Password, Bitwarden, etc.)</li>
-          <li>Consider printing on paper (cold storage)</li>
-          <li>Never share your backup with anyone</li>
-          <li>Backup after EVERY deposit transaction</li>
-        </ul>
-      </div>
-    </div>
+      <Alert variant="info" className="mt-6">
+        <div>
+          <h4 className="font-semibold mb-2 text-sm">
+            💡 Security Best Practices
+          </h4>
+          <ul className="text-xs space-y-1 list-disc list-inside">
+            <li>Store backups in multiple secure locations</li>
+            <li>Use a password manager (1Password, Bitwarden, etc.)</li>
+            <li>Consider printing on paper (cold storage)</li>
+            <li>Never share your backup with anyone</li>
+            <li>Backup after EVERY deposit transaction</li>
+          </ul>
+        </div>
+      </Alert>
+    </Card>
   );
 }

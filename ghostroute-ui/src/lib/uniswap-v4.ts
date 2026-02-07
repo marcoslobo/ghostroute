@@ -1,6 +1,7 @@
 import { createPublicClient, http, Address, keccak256, encodeAbiParameters, parseAbiItem } from 'viem';
 import { defineChain } from 'viem';
 import { sepolia } from 'viem/chains';
+import { SavedPoolDefinition, getSavedPoolsByChain } from '@/config/saved-pools';
 
 // Chain definitions
 export const unichainSepolia = defineChain({
@@ -839,4 +840,86 @@ export const useSwap = () => {
     // 2. Call UniversalRouter with swap commands
   };
   return { swap, isPending: false, isSuccess: false, error: null as Error | null };
+};
+
+// ============================================================================
+// Saved Pools Management (for PoC)
+// ============================================================================
+
+/**
+ * Enriches a single saved pool definition with token info and current state
+ * @param poolDef - Pool definition from config
+ * @param chainId - Chain ID to use for fetching data
+ * @returns Enriched pool as PoolFromEvent or null if enrichment fails
+ */
+export const enrichSavedPool = async (
+  poolDef: SavedPoolDefinition,
+  chainId: SupportedChainId
+): Promise<PoolFromEvent | null> => {
+  try {
+    // Compute poolId using existing getPoolId function
+    const poolId = getPoolId({
+      token0: poolDef.token0,
+      token1: poolDef.token1,
+      fee: poolDef.fee,
+      tickSpacing: poolDef.tickSpacing,
+      hooks: poolDef.hooks,
+    });
+
+    console.log(`[enrichSavedPool] Processing pool ${poolId.slice(0, 10)}...`);
+
+    // Fetch token info and pool state using existing functions
+    const [token0Info, token1Info, poolState] = await Promise.all([
+      fetchTokenInfo(poolDef.token0, chainId),
+      fetchTokenInfo(poolDef.token1, chainId),
+      fetchPoolState(poolId, chainId),
+    ]);
+
+    // Return as PoolFromEvent for compatibility
+    return {
+      poolId,
+      currency0: poolDef.token0,
+      currency1: poolDef.token1,
+      fee: poolDef.fee,
+      tickSpacing: poolDef.tickSpacing,
+      hooks: poolDef.hooks,
+      initialSqrtPriceX96: poolState?.sqrtPriceX96 ?? BigInt(0),
+      initialTick: poolState?.tick ?? 0,
+      blockNumber: BigInt(0),  // Placeholder for saved pools
+      transactionHash: '0x' as `0x${string}`,  // Placeholder
+    };
+  } catch (error) {
+    console.error(`[enrichSavedPool] Error enriching pool:`, error);
+    return null;
+  }
+};
+
+/**
+ * Loads all saved pools for a specific chain from config
+ * @param chainId - Chain ID to filter pools by
+ * @returns Array of enriched pools ready for display
+ */
+export const loadSavedPools = async (
+  chainId: SupportedChainId
+): Promise<PoolFromEvent[]> => {
+  console.log(`[loadSavedPools] Loading saved pools for chain ${chainId}...`);
+
+  const savedPoolDefs = getSavedPoolsByChain(chainId);
+  console.log(`[loadSavedPools] Found ${savedPoolDefs.length} saved pool(s) in config`);
+
+  if (savedPoolDefs.length === 0) {
+    return [];
+  }
+
+  const enrichedPools: PoolFromEvent[] = [];
+
+  for (const poolDef of savedPoolDefs) {
+    const enrichedPool = await enrichSavedPool(poolDef, chainId);
+    if (enrichedPool) {
+      enrichedPools.push(enrichedPool);
+    }
+  }
+
+  console.log(`[loadSavedPools] Successfully loaded ${enrichedPools.length} pool(s)`);
+  return enrichedPools;
 };

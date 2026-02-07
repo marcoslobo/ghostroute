@@ -19,20 +19,19 @@ export function PrivacyActionsSection() {
   const [activeTab, setActiveTab] = useState<TabType>('deposit');
   const { notes, totalBalance, refreshNotes } = useNotes();
 
-  const tabs: { id: TabType; label: string; color: string }[] = [
-    { id: 'deposit', label: 'Deposit', color: 'blue' },
-    { id: 'withdraw', label: 'Withdraw', color: 'red' },
-    { id: 'invest', label: 'Invest', color: 'green' },
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'deposit', label: 'Deposit' },
+    { id: 'withdraw', label: 'Withdraw' },
+    { id: 'invest', label: 'Invest' },
   ];
 
   const getTabClasses = (tabId: TabType) => {
     const isActive = activeTab === tabId;
-    const tab = tabs.find((t) => t.id === tabId)!;
 
     if (isActive) {
-      return `px-4 py-2 font-medium border-b-2 border-${tab.color}-600 text-${tab.color}-600`;
+      return 'px-4 py-2 font-medium border-b-2 border-ghost-cyan text-ghost-cyan';
     }
-    return 'px-4 py-2 font-medium text-gray-500 hover:text-gray-700';
+    return 'px-4 py-2 font-medium text-muted-foreground hover:text-foreground transition-colors';
   };
 
   return (
@@ -40,7 +39,7 @@ export function PrivacyActionsSection() {
       <h2 className="text-2xl font-bold mb-6">Privacy Vault Operations</h2>
 
       {/* Tabs */}
-      <div className="border-b mb-6">
+      <div className="border-b border-ghost-border mb-6">
         <div className="flex gap-2">
           {tabs.map((tab) => (
             <button

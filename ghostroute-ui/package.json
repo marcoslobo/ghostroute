@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "parse-pools": "node scripts/parse-pool-output.js",
+    "clear-pools": "node scripts/clear-pools.js"
   },
   "dependencies": {
     "@metamask/sdk": "^0.34.0",
@@ -23,6 +25,7 @@
     "events": "^3.3.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
+    "poseidon-lite": "^0.3.0",
     "process": "^0.11.10",
     "react": "19.2.3",
     "react-dom": "19.2.3",

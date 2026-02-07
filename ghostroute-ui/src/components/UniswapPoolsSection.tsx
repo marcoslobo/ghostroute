@@ -1,6 +1,6 @@
 import UniswapV4PoolsClient from '@/components/UniswapV4PoolsClient';
 import {
-  fetchPoolsFromEvents,
+  loadSavedPools,
   fetchTokenInfo,
   fetchPoolState,
   DEFAULT_CHAIN_ID,
@@ -51,10 +51,10 @@ export async function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: Uniswa
   const networkConfig = NETWORK_CONFIG[chainId];
 
   try {
-    console.log(`[UniswapPoolsSection] Fetching pools from ${networkConfig.name}...`);
+    console.log(`[UniswapPoolsSection] Loading saved pools from ${networkConfig.name}...`);
 
-    // Fetch pools from Initialize events
-    const poolsFromEvents = await fetchPoolsFromEvents(chainId);
+    // Load saved pools from config
+    const poolsFromEvents = await loadSavedPools(chainId);
 
     console.log(`[UniswapPoolsSection] Found ${poolsFromEvents.length} pools`);
 
@@ -113,32 +113,30 @@ export async function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: Uniswa
   }
 
   return (
-    <section className="py-12">
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-2 text-center text-gradient">
-          Uniswap V4 Pools
-        </h2>
-        <p className="text-center text-muted-foreground mb-6">
-          Live pools on {networkConfig.name} • {enrichedPools.length} pools found
-        </p>
+    <div className="glass rounded-2xl p-8 border-2 border-ghost-border/50 shadow-card">
+      <h2 className="text-3xl font-bold mb-2 text-center text-gradient">
+        Uniswap V4 Pools
+      </h2>
+      <p className="text-center text-muted-foreground mb-6">
+        Live pools on {networkConfig.name} • {enrichedPools.length} pools found
+      </p>
 
-        {error && (
-          <div className="text-center p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500">
-            Error loading pools: {error}
-          </div>
-        )}
+      {error && (
+        <div className="text-center p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500">
+          Error loading pools: {error}
+        </div>
+      )}
 
-        {!error && enrichedPools.length === 0 && (
-          <div className="text-center p-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500">
-            <p className="mb-2">No Uniswap V4 pools found on {networkConfig.name}.</p>
-            <p className="text-sm text-muted-foreground">
-              Pools are discovered by querying Initialize events from the PoolManager contract.
-            </p>
-          </div>
-        )}
+      {!error && enrichedPools.length === 0 && (
+        <div className="text-center p-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500">
+          <p className="mb-2">No Uniswap V4 pools found on {networkConfig.name}.</p>
+          <p className="text-sm text-muted-foreground">
+            Pools are discovered by querying Initialize events from the PoolManager contract.
+          </p>
+        </div>
+      )}
 
-        <UniswapV4PoolsClient pools={enrichedPools} chainId={chainId} />
-      </div>
-    </section>
+      <UniswapV4PoolsClient pools={enrichedPools} chainId={chainId} />
+    </div>
   );
 }

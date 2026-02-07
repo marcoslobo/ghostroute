@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button';
 import { useEffect, useState } from 'react';
 
 const SUPPORTED_CHAINS = [
-  { id: 1301, name: 'Unichain Sepolia' },
   { id: 11155111, name: 'Sepolia' },
   { id: 1, name: 'Ethereum' },
 ] as const;
@@ -23,13 +22,13 @@ export function NetworkSelector() {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '0.5rem' }}>
+    <div className="flex gap-2">
       {SUPPORTED_CHAINS.map((chain) => (
         <Button
           key={chain.id}
           onClick={() => switchChain(chain.id)}
           variant={chainId === chain.id ? 'primary' : 'outline'}
-          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+          size="sm"
         >
           {chain.name}
         </Button>

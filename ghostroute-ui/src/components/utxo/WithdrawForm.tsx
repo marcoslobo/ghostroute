@@ -12,6 +12,10 @@ import { useWithdraw } from '@/hooks/utxo/useWithdraw';
 import { useNotes } from '@/hooks/utxo/useNotes';
 import { Note } from '@/types/utxo/note';
 import { isAddress } from 'viem';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/Card';
 
 interface WithdrawFormProps {
   onComplete?: () => void;
@@ -93,34 +97,36 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
 
   if (!address) {
     return (
-      <div className="p-4 border rounded text-center text-gray-500">
-        Connect your wallet to withdraw
-      </div>
+      <Alert variant="warning">
+        <p className="text-center">Connect your wallet to withdraw</p>
+      </Alert>
     );
   }
 
   if (validNotes.length === 0) {
     return (
-      <div className="p-4 border rounded text-center text-gray-500">
-        {unspentNotes.length > 0
-          ? 'No valid notes available. All notes are missing leafIndex. Please make a new deposit.'
-          : 'No notes available. Deposit first to create a note.'}
-      </div>
+      <Alert variant="warning">
+        <p className="text-center">
+          {unspentNotes.length > 0
+            ? 'No valid notes available. All notes are missing leafIndex. Please make a new deposit.'
+            : 'No notes available. Deposit first to create a note.'}
+        </p>
+      </Alert>
     );
   }
 
   return (
-    <div className="withdraw-form p-4 border rounded">
+    <Card padding="md">
       <h2 className="text-xl font-semibold mb-4">Withdraw from Privacy Vault</h2>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Note Selector */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Select Note</label>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">Select Note</label>
           <select
             value={selectedNoteIndex}
             onChange={(e) => setSelectedNoteIndex(Number(e.target.value))}
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 rounded-lg border bg-input text-foreground border-border focus:outline-none focus:ring-2 focus:ring-ghost-cyan focus:border-ghost-cyan disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isProcessing}
           >
             {validNotes.map((note, index) => (
@@ -132,55 +138,50 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
         </div>
 
         {/* Withdraw Amount */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Withdraw Amount (ETH)</label>
-          <input
-            type="number"
-            step="0.00001"
-            min="0"
-            value={withdrawAmount}
-            onChange={(e) => setWithdrawAmount(e.target.value)}
-            placeholder="0.5"
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isProcessing}
-            autoComplete="off"
-          />
-        </div>
+        <Input
+          type="number"
+          step="0.00001"
+          min="0"
+          value={withdrawAmount}
+          onChange={(e) => setWithdrawAmount(e.target.value)}
+          placeholder="0.5"
+          label="Withdraw Amount (ETH)"
+          disabled={isProcessing}
+        />
 
         {/* Recipient Address */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Recipient Address</label>
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="0x..."
-            className="w-full p-2 border rounded font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isProcessing}
-            autoComplete="off"
-          />
-          {recipient && !isAddress(recipient) && (
-            <small className="text-red-500">Invalid Ethereum address</small>
-          )}
-        </div>
+        <Input
+          type="text"
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          placeholder="0x..."
+          label="Recipient Address"
+          className="font-mono text-sm"
+          disabled={isProcessing}
+          error={recipient && !isAddress(recipient) ? 'Invalid Ethereum address' : undefined}
+        />
 
-        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+        {error && (
+          <Alert variant="error">
+            <span className="text-sm">{error}</span>
+          </Alert>
+        )}
 
         {previewError && (
-          <div className="text-orange-600 text-sm mb-4 p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
-            ⚠️ {previewError}
-          </div>
+          <Alert variant="warning">
+            <span className="text-sm">⚠️ {previewError}</span>
+          </Alert>
         )}
 
         {success && (
-          <div className="text-green-600 text-sm mb-4 p-2 bg-green-50 rounded">
-            ✓ Withdraw successful!
-          </div>
+          <Alert variant="success">
+            <span className="text-sm">✓ Withdraw successful!</span>
+          </Alert>
         )}
 
         {/* Preview */}
         {preview && (
-          <div className="border rounded p-4 mb-4 bg-gray-50">
+          <Card variant="glass" padding="md">
             <h3 className="font-medium mb-2">Transaction Preview</h3>
             <div className="flex justify-between text-sm mb-1">
               <span>Withdraw:</span>
@@ -195,18 +196,19 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
               <span>{formatETH(preview.changeNote.value)} ETH</span>
             </div>
             {preview.changeNote.value > 0n && (
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-xs text-muted-foreground mt-2">
                 <span>Change Commitment: </span>
-                <code className="bg-gray-100 px-1 rounded">
+                <code className="bg-ghost-card px-1 rounded">
                   {preview.changeCommitment.slice(0, 10)}...
                 </code>
               </div>
             )}
-          </div>
+          </Card>
         )}
 
-        <button
+        <Button
           type="submit"
+          variant="destructive"
           disabled={
             isProcessing ||
             !withdrawAmount ||
@@ -215,7 +217,7 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
             !isAddress(recipient) ||
             !preview
           }
-          className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 disabled:opacity-50"
+          className="w-full"
         >
           {isGeneratingProof
             ? '⏳ Generating zero-knowledge proof...'
@@ -224,14 +226,14 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
             : isConfirming
             ? 'Confirming...'
             : 'Withdraw'}
-        </button>
+        </Button>
 
         {isGeneratingProof && (
-          <div className="mt-2 text-sm text-gray-600 text-center animate-pulse">
+          <div className="mt-2 text-sm text-muted-foreground text-center animate-pulse">
             This may take 10-30 seconds. Please wait...
           </div>
         )}
       </form>
-    </div>
+    </Card>
   );
 }

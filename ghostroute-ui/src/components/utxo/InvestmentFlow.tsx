@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { InvestmentForm } from './InvestmentForm';
 import { TransactionPreview } from './TransactionPreview';
 import { UTXOMathResult } from '@/types/utxo';
+import { Button } from '@/components/ui/Button';
 
 export function InvestmentFlow() {
   const [transaction, setTransaction] = useState<UTXOMathResult | null>(null);
@@ -19,18 +20,19 @@ export function InvestmentFlow() {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       <TransactionPreview
         transaction={transaction}
         actionType="uniswap-v4-swap"
         onComplete={() => setTransaction(null)}
       />
-      <button
+      <Button
         onClick={() => setTransaction(null)}
-        className="mt-4 text-sm text-gray-600 hover:text-gray-800"
+        variant="ghost"
+        size="sm"
       >
         ← Back to form
-      </button>
+      </Button>
     </div>
   );
 }
