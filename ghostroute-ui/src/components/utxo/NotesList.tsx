@@ -21,6 +21,8 @@ interface NotesListProps {
 export function NotesList({ notes, totalBalance }: NotesListProps) {
   const { chainId } = useAccount();
 
+  console.log('[NotesList] ChainId:', chainId, 'Notes:', notes.map(n => ({ token: n.token, value: n.value })));
+
   const formatAmount = (wei: bigint, tokenAddress: string): string => {
     const decimals = getTokenDecimals(tokenAddress, chainId || 11155111);
     const divisor = BigInt(10) ** BigInt(decimals);
@@ -28,7 +30,9 @@ export function NotesList({ notes, totalBalance }: NotesListProps) {
   };
 
   const getTokenSymbolDisplay = (tokenAddress: string): string => {
-    return getTokenSymbol(tokenAddress, chainId || 11155111);
+    const symbol = getTokenSymbol(tokenAddress, chainId || 11155111);
+    console.log('[NotesList] GetTokenSymbol:', tokenAddress, '=>', symbol);
+    return symbol;
   };
 
   // Group total balance by token
