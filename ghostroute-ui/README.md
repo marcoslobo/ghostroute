@@ -77,6 +77,70 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 -   `npm run start`: Starts the production server.
 -   `npm run lint`: Lints the codebase.
 
+## 🔄 Pool Management
+
+GhostRoute uses a hardcoded pool configuration system for fast, reliable pool loading without requiring constant RPC queries.
+
+### Method 1: From Hardhat Deployment (Recommended for New Pools)
+
+If you're deploying pools using the `uniswap-pool-creator` repository:
+
+1. **Deploy Pool** (in `uniswap-pool-creator` repo):
+   ```bash
+   npx hardhat run scripts/deployPool.js --network sepolia
+   ```
+
+2. **Copy Output** to `ghostroute-ui/pool-output.txt`:
+   - Copy the entire Hardhat console output
+   - Paste into `pool-output.txt` in the ghostroute-ui root directory
+
+3. **Parse Pools** (in `ghostroute-ui` repo):
+   ```bash
+   npm run parse-pools
+   ```
+   This script:
+   - Reads `pool-output.txt`
+   - Extracts pool info (Token0, Token1, Pool ID, Fee, Tick Spacing)
+   - Appends to `lib/uniswap-v4/saved-pools.ts` (avoids duplicates)
+   - Shows summary of added/skipped pools
+
+4. **Verify** the pools appear in your app
+
+**Optional - Clear All Pools**:
+```bash
+npm run clear-pools
+```
+
+### Method 2: From RPC Events (For Existing Pools)
+
+To fetch all existing pools from the blockchain:
+
+1. Ensure your `.env.local` has valid RPC API keys (Infura or Alchemy)
+2. Run the pool fetcher script:
+   ```bash
+   npx tsx scripts/fetch-pools.ts
+   ```
+3. The script will:
+   - Query the PoolManager contract for `Initialize` events
+   - Fetch pool details (tokens, fees, tick spacing, hooks)
+   - Generate a TypeScript configuration file at `lib/uniswap-v4/saved-pools.ts`
+   - Display statistics about pools found
+
+4. Commit the updated `saved-pools.ts` file
+
+### How It Works
+
+- **Static Config**: Pools are stored in `lib/uniswap-v4/saved-pools.ts`
+- **Instant Loading**: No RPC calls needed on page load
+- **Complete History**: Shows all pools ever created, not just recent ones
+- **Easy Updates**: Re-run the script whenever new pools are created
+
+### When to Update
+
+- After deploying new pools to the PoolManager
+- Periodically to catch pools created by others
+- When switching networks (Sepolia ↔ Mainnet)
+
 ## 🏗️ Tech Stack
 
 -   **Framework:** Next.js 14+ (App Router)
@@ -103,8 +167,12 @@ ghostroute-ui/
 │   ├── hooks/            # React hooks (useWallet, useNotes, useUTXOMath)
 │   ├── lib/              # Utilities and configs
 │   │   └── uniswap-v4/   # Uniswap V4 integration
+│   │       ├── index.ts         # Pool utilities and loaders
+│   │       └── saved-pools.ts   # Hardcoded pool configurations
 │   ├── services/         # Storage and external services
 │   └── types/            # TypeScript type definitions
+├── scripts/
+│   └── fetch-pools.ts    # Pool fetcher script for updating saved-pools.ts
 ├── public/               # Static assets (logos, icons)
 └── tailwind.config.ts    # Tailwind configuration with custom theme
 ```
@@ -150,6 +218,8 @@ The UI follows a consistent design system with:
 -   Ensure your notes have not been spent already
 
 ### Pool Loading Issues
+-   If pools aren't showing: ensure `lib/uniswap-v4/saved-pools.ts` exists and has data
+-   To update pool list: run `npx tsx scripts/fetch-pools.ts`
 -   Verify RPC endpoints are responding (check API keys in `.env.local`)
 -   Try switching networks to refresh pool data
 -   Check browser console for detailed error messages
