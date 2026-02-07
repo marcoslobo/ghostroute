@@ -189,4 +189,36 @@ export const PRIVACY_VAULT_ABI = [
     ],
     anonymous: false,
   },
+
+  // Action Executed (pool investment)
+  {
+    type: 'event',
+    name: 'ActionExecuted',
+    inputs: [
+      { name: 'nullifierHash', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+      { name: 'changeCommitment', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+      { name: 'actionHash', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+      { name: 'investAmount', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'changeIndex', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+
+  // computeActionHash view function
+  {
+    type: 'function',
+    name: 'computeActionHash',
+    inputs: [
+      { name: 'poolId', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'tickLower', type: 'int24', internalType: 'int24' },
+      { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+      { name: 'amount0Desired', type: 'uint256', internalType: 'uint256' },
+      { name: 'amount1Desired', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [
+      { name: 'actionHash', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    stateMutability: 'pure',
+  },
 ] as const;

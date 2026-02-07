@@ -1,12 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
-import { useAddLiquidity, NETWORK_CONFIG, type SupportedChainId } from '@/lib/uniswap-v4';
+import { NETWORK_CONFIG, type SupportedChainId } from '@/lib/uniswap-v4';
 import { EnrichedPool } from '@/components/UniswapPoolsSection';
-import { parseUnits, formatUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { PoolInvestmentModal } from '@/components/utxo/PoolInvestmentModal';
+import { PoolInvestmentResult } from '@/types/utxo/investment';
+import { useNotes } from '@/hooks/utxo/useNotes';
+import { isPoolCompatible } from '@/utils/utxo/poolCompatibility';
 
 interface UniswapV4PoolsClientProps {
   pools: EnrichedPool[];
@@ -29,23 +33,19 @@ const formatNumber = (num: string): string => {
   return value.toFixed(2);
 };
 
-const formatSqrtPrice = (sqrtPriceX96: bigint | undefined): string => {
-  if (!sqrtPriceX96) return 'N/A';
-  // sqrtPriceX96 = sqrt(price) * 2^96
-  // price = (sqrtPriceX96 / 2^96)^2
-  const Q96 = BigInt(2) ** BigInt(96);
-  const priceX192 = sqrtPriceX96 * sqrtPriceX96;
-  const price = Number(priceX192) / Number(Q96 * Q96);
-
-  if (price < 0.0001) return price.toExponential(4);
-  if (price > 10000) return price.toExponential(4);
-  return price.toFixed(6);
-};
-
-const formatLiquidity = (liquidity: bigint | undefined): string => {
-  if (!liquidity) return 'N/A';
-  const value = Number(formatUnits(liquidity, 18));
-  return formatNumber(value.toString());
+const formatTokenAmount = (amount: bigint | undefined, decimals: number): string => {
+  if (!amount || amount === 0n) return '0';
+  const value = Number(formatUnits(amount, decimals));
+  if (value >= 1_000_000) {
+    return (value / 1_000_000).toFixed(2) + 'M';
+  }
+  if (value >= 1_000) {
+    return (value / 1_000).toFixed(2) + 'K';
+  }
+  if (value < 0.001) {
+    return value.toExponential(2);
+  }
+  return value.toFixed(4);
 };
 
 const truncateAddress = (address: string, chars = 6): string => {
@@ -54,38 +54,35 @@ const truncateAddress = (address: string, chars = 6): string => {
 
 const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chainId = 11155111 }) => {
   const { isConnected } = useAccount();
-  const {
-    addLiquidity,
-    isPending: isAddingLiquidity,
-    isSuccess: addLiquiditySuccess,
-    error: addLiquidityError
-  } = useAddLiquidity();
+  const { unspentNotes } = useNotes();
   const networkConfig = NETWORK_CONFIG[chainId];
 
-  const handleAddLiquidity = async (pool: EnrichedPool) => {
-    if (!isConnected) {
-      alert('Please connect your wallet to add liquidity.');
-      return;
-    }
-    const amount0Desired = BigInt(parseUnits('0.001', pool.token0.decimals));
-    const amount1Desired = BigInt(parseUnits('0.001', pool.token1.decimals));
+  // Pool investment modal state
+  const [selectedPool, setSelectedPool] = useState<EnrichedPool | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [investmentSuccess, setInvestmentSuccess] = useState<PoolInvestmentResult | null>(null);
 
-    await addLiquidity({
-      poolId: pool.id,
-      token0: pool.token0.id,
-      token1: pool.token1.id,
-      amount0Desired,
-      amount1Desired,
-    });
+  const handleOpenInvestModal = (pool: EnrichedPool) => {
+    setSelectedPool(pool);
+    setModalOpen(true);
   };
 
-  const handleRemoveLiquidity = async (pool: EnrichedPool) => {
-    if (!isConnected) {
-      alert('Please connect your wallet to remove liquidity.');
-      return;
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedPool(null);
+    // Clear success message after a delay
+    if (investmentSuccess) {
+      setTimeout(() => setInvestmentSuccess(null), 5000);
     }
-    // TODO: Implement remove liquidity functionality
-    alert('Remove liquidity functionality coming soon!');
+  };
+
+  const handleInvestmentSuccess = (result: PoolInvestmentResult) => {
+    setInvestmentSuccess(result);
+  };
+
+  // Check if user has compatible notes for a pool
+  const hasCompatibleNotes = (pool: EnrichedPool): boolean => {
+    return unspentNotes.some((note) => isPoolCompatible(pool, note));
   };
 
   if (pools.length === 0) {
@@ -94,15 +91,29 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chai
 
   return (
     <div className="overflow-x-auto">
+      {/* Investment Success Alert */}
+      {investmentSuccess && (
+        <Alert variant="success" className="mb-4">
+          <div className="flex flex-col">
+            <span className="font-medium">Investment Successful!</span>
+            <span className="text-xs">
+              Transaction: {investmentSuccess.transactionHash?.slice(0, 10)}...
+              {investmentSuccess.changeNote && (
+                <span className="ml-2">
+                  Change note: {formatUnits(investmentSuccess.changeNote.value, 18)} ETH
+                </span>
+              )}
+            </span>
+          </div>
+        </Alert>
+      )}
+
       <table className="min-w-full bg-card rounded-lg shadow-lg overflow-hidden">
         <thead className="bg-muted text-muted-foreground uppercase text-xs leading-normal">
           <tr>
             <th className="py-3 px-4 text-left">Token Pair</th>
             <th className="py-3 px-4 text-left">Fee</th>
-            <th className="py-3 px-4 text-left">Price</th>
-            <th className="py-3 px-4 text-left">Tick</th>
-            <th className="py-3 px-4 text-left">Liquidity</th>
-            <th className="py-3 px-4 text-left">Hooks</th>
+            <th className="py-3 px-4 text-left">Reserves</th>
             <th className="py-3 px-4 text-center">Actions</th>
           </tr>
         </thead>
@@ -128,70 +139,45 @@ const UniswapV4PoolsClient: React.FC<UniswapV4PoolsClientProps> = ({ pools, chai
                 </span>
               </td>
               <td className="py-3 px-4 text-left">
-                <span className="font-mono text-sm">
-                  {formatSqrtPrice(pool.sqrtPriceX96)}
-                </span>
-              </td>
-              <td className="py-3 px-4 text-left">
-                <span className="font-mono text-sm">
-                  {pool.tick !== undefined ? pool.tick : 'N/A'}
-                </span>
-              </td>
-              <td className="py-3 px-4 text-left">
-                <span className="font-mono text-sm">
-                  {formatLiquidity(pool.liquidity)}
-                </span>
-              </td>
-              <td className="py-3 px-4 text-left">
-                {pool.hooks === '0x0000000000000000000000000000000000000000' ? (
-                  <span className="text-muted-foreground text-xs">None</span>
-                ) : (
-                  <a
-                    href={`${networkConfig.blockExplorer}/address/${pool.hooks}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-ghost-cyan hover:underline text-xs font-mono"
-                  >
-                    {truncateAddress(pool.hooks, 4)}
-                  </a>
-                )}
+                <div className="flex flex-col text-xs">
+                  <span className="font-mono">
+                    {formatTokenAmount(pool.token0Reserve, pool.token0.decimals)} {pool.token0.symbol}
+                  </span>
+                  <span className="font-mono text-muted-foreground">
+                    {formatTokenAmount(pool.token1Reserve, pool.token1.decimals)} {pool.token1.symbol}
+                  </span>
+                </div>
               </td>
               <td className="py-3 px-4 text-center">
                 <div className="flex items-center justify-center gap-2">
                   <Button
                     size="sm"
-                    variant="primary"
-                    onClick={() => handleAddLiquidity(pool)}
-                    disabled={isAddingLiquidity || !isConnected}
+                    variant="outline"
+                    onClick={() => handleOpenInvestModal(pool)}
+                    disabled={!isConnected || !hasCompatibleNotes(pool)}
+                    title={!isConnected ? 'Connect wallet to invest' : !hasCompatibleNotes(pool) ? 'No compatible notes for this pool' : 'Invest using privacy notes'}
                   >
-                    {isAddingLiquidity ? '...' : '+ Liquidity'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleRemoveLiquidity(pool)}
-                    disabled={!isConnected}
-                  >
-                    - Liquidity
+                    Invest
+                    {hasCompatibleNotes(pool) && (
+                      <span className="ml-1 w-2 h-2 bg-green-500 rounded-full inline-block" title="Compatible notes available" />
+                    )}
                   </Button>
                 </div>
-                {addLiquiditySuccess && (
-                  <Alert variant="success" className="mt-2">
-                    <span className="text-xs">Liquidity added successfully!</span>
-                  </Alert>
-                )}
-                {addLiquidityError && (
-                  <Alert variant="error" className="mt-2">
-                    <span className="text-xs">
-                      Failed: {addLiquidityError?.message}
-                    </span>
-                  </Alert>
-                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Pool Investment Modal */}
+      {selectedPool && (
+        <PoolInvestmentModal
+          pool={selectedPool}
+          isOpen={modalOpen}
+          onClose={handleCloseModal}
+          onSuccess={handleInvestmentSuccess}
+        />
+      )}
     </div>
   );
 };

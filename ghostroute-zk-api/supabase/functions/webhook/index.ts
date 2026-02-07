@@ -3,10 +3,13 @@ import {
   WebhookPayload,
   isNewCommitment,
   isNullifierSpent,
+  isActionExecuted,
   validateNewCommitment,
   validateNullifierSpent,
+  validateActionExecuted,
   handleNewCommitment,
   handleNullifierSpent,
+  handleActionExecuted,
 } from '../_shared/handlers/webhook.ts';
 import { getSupabaseClient, isEventProcessed, recordProcessedEvent } from '../_shared/utils/db.ts';
 import { vaultService } from '../_shared/handlers/events.ts';
@@ -91,6 +94,12 @@ async function handleRequest(req: Request): Promise<Response> {
       chainId = payload.chainId;
       vaultAddress = payload.vaultAddress;
       eventType = 'NullifierSpent';
+    } else if (isActionExecuted(payload)) {
+      validateActionExecuted(payload);
+      eventId = payload.eventId;
+      chainId = payload.chainId;
+      vaultAddress = payload.vaultAddress;
+      eventType = 'ActionExecuted';
     } else {
       throw new Error('Unknown payload type');
     }
@@ -117,8 +126,21 @@ async function handleRequest(req: Request): Promise<Response> {
 
     if (eventType === 'NewCommitment') {
       result = await handleNewCommitment(payload as any);
+    } else if (eventType === 'ActionExecuted') {
+      result = await handleActionExecuted(payload as any);
     } else {
       result = await handleNullifierSpent(payload as any);
+    }
+
+    // Build idempotency key based on event type
+    let idempotencyKey: string;
+    if (eventType === 'NewCommitment') {
+      idempotencyKey = `commitment:${(payload as any).commitment.hash}`;
+    } else if (eventType === 'ActionExecuted') {
+      // Use nullifierHash + block number for ActionExecuted idempotency
+      idempotencyKey = `action:${(payload as any).nullifierHash}:${payload.block.number}`;
+    } else {
+      idempotencyKey = `nullifier:${(payload as any).nullifier.hash}`;
     }
 
     await recordProcessedEvent(
@@ -126,9 +148,12 @@ async function handleRequest(req: Request): Promise<Response> {
       eventType,
       eventId,
       payload.block.number,
-      eventType === 'NewCommitment' ? (payload as any).commitment.hash : null,
-      eventType === 'NullifierSpent' ? (payload as any).nullifier.hash : null,
-      eventType === 'NewCommitment' ? (payload as any).commitment.index : null
+      eventType === 'NewCommitment' ? (payload as any).commitment.hash : 
+        eventType === 'ActionExecuted' ? (payload as any).changeCommitment : null,
+      eventType === 'NullifierSpent' ? (payload as any).nullifier.hash : 
+        eventType === 'ActionExecuted' ? (payload as any).nullifierHash : null,
+      eventType === 'NewCommitment' ? (payload as any).commitment.index :
+        eventType === 'ActionExecuted' ? (payload as any).changeIndex : null
     );
 
     const response: WebhookResponse = {

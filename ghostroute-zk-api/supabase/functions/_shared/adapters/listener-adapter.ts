@@ -6,7 +6,7 @@
  */
 
 import { ListenerEventPayload, getChainIdFromContract } from './listener-types.ts';
-import { NewCommitmentPayload } from '../handlers/webhook.ts';
+import { NewCommitmentPayload, ActionExecutedPayload, WebhookPayload } from '../handlers/webhook.ts';
 
 /**
  * Transform listener's Deposit event to NewCommitmentPayload
@@ -102,20 +102,89 @@ export function adaptDepositEvent(
 }
 
 /**
- * Transform listener's ActionExecuted event to NullifierSpentPayload
- *
- * TODO: Implement when ActionExecuted flow is ready
+ * Transform listener's ActionExecuted event to ActionExecutedPayload
  *
  * @param listenerPayload - Raw payload from blockchain listener
- * @throws Error - Not yet implemented
+ * @returns Transformed payload in API format
+ * @throws Error if validation fails or contract address is unknown
  */
 export function adaptActionExecutedEvent(
   listenerPayload: ListenerEventPayload
-): never {
-  throw new Error(
-    'ActionExecuted event adapter not yet implemented. ' +
-      'Currently only Deposit events are supported.'
+): ActionExecutedPayload {
+  // Validate event signature
+  const expectedSignature = 'ActionExecuted(bytes32,bytes32,bytes32,uint256,uint256,uint256)';
+  if (listenerPayload.EventSignature !== expectedSignature) {
+    throw new Error(
+      `Unsupported event signature: ${listenerPayload.EventSignature}. Expected: ${expectedSignature}`
+    );
+  }
+
+  // Map contract address to chain ID
+  const contractAddress = listenerPayload.ContractAddress.toLowerCase();
+  const chainId = getChainIdFromContract(contractAddress);
+
+  if (!chainId) {
+    throw new Error(
+      `Unknown contract address: ${contractAddress}. ` +
+        `Please add to CONTRACT_TO_CHAIN_MAP in listener-types.ts`
+    );
+  }
+
+  // Extract decoded parameters
+  const paramNames = listenerPayload.DecodedParametersNames;
+  const paramValues = listenerPayload.DecodedParametersValues;
+
+  // Validate arrays have same length
+  if (paramNames.length !== paramValues.length) {
+    throw new Error(
+      `Parameter mismatch: ${paramNames.length} names vs ${paramValues.length} values`
+    );
+  }
+
+  // Create parameter map for easier access
+  const params: Record<string, string | number> = {};
+  paramNames.forEach((name, index) => {
+    params[name] = paramValues[index];
+  });
+
+  // Validate required parameters exist
+  const requiredParams = ['nullifierHash', 'changeCommitment', 'actionHash', 'investAmount', 'timestamp', 'changeIndex'];
+  for (const param of requiredParams) {
+    if (!(param in params)) {
+      throw new Error(`Missing required parameter: ${param}`);
+    }
+  }
+
+  // Parse block timestamp (ISO 8601 to Unix timestamp in seconds)
+  const blockTimestamp = Math.floor(
+    new Date(listenerPayload.BlockTimestamp).getTime() / 1000
   );
+
+  // Build ActionExecutedPayload
+  const adapted: ActionExecutedPayload = {
+    eventId: listenerPayload.Id,
+    chainId: chainId,
+    vaultAddress: contractAddress,
+    nullifierHash: params.nullifierHash as string,
+    changeCommitment: params.changeCommitment as string,
+    actionHash: params.actionHash as string,
+    investAmount: params.investAmount as string,
+    timestamp: parseInt(params.timestamp as string, 10),
+    changeIndex: parseInt(params.changeIndex as string, 10),
+    block: {
+      number: listenerPayload.BlockNumber,
+      hash: listenerPayload.BlockHash.toLowerCase(),
+      timestamp: blockTimestamp,
+    },
+    transactionHash: listenerPayload.TransactionHash.toLowerCase(),
+  };
+
+  // Log successful transformation
+  console.log(
+    `[adapter] ✅ Adapted ActionExecuted event: ${adapted.transactionHash.slice(0, 10)}... changeIndex=${adapted.changeIndex}`
+  );
+
+  return adapted;
 }
 
 /**
@@ -130,7 +199,7 @@ export function adaptActionExecutedEvent(
  */
 export function adaptListenerPayload(
   listenerPayload: ListenerEventPayload
-): NewCommitmentPayload | null {
+): WebhookPayload | null {
   const eventSig = listenerPayload.EventSignature;
 
   console.log(`[adapter] Received event: ${eventSig} from tx ${listenerPayload.TransactionHash.slice(0, 10)}...`);

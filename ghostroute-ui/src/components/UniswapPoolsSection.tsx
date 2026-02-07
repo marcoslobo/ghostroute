@@ -3,6 +3,7 @@ import {
   loadSavedPools,
   fetchTokenInfo,
   fetchPoolState,
+  calculateTokenReserves,
   DEFAULT_CHAIN_ID,
   NETWORK_CONFIG,
   type SupportedChainId,
@@ -35,6 +36,8 @@ export interface EnrichedPool {
   sqrtPriceX96?: bigint;
   tick?: number;
   liquidity?: bigint;
+  token0Reserve?: bigint;
+  token1Reserve?: bigint;
   blockNumber?: bigint;
   transactionHash?: `0x${string}`;
   chainId: SupportedChainId;
@@ -68,6 +71,11 @@ export async function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: Uniswa
           fetchPoolState(pool.poolId, chainId),
         ]);
 
+        // Calculate token reserves from liquidity and price
+        const liquidity = poolState?.liquidity ?? BigInt(0);
+        const sqrtPriceX96 = poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96;
+        const { token0Reserve, token1Reserve } = calculateTokenReserves(liquidity, sqrtPriceX96);
+
         const enrichedPool: EnrichedPool = {
           id: pool.poolId,
           fullPoolId: pool.poolId,
@@ -88,6 +96,8 @@ export async function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: Uniswa
           sqrtPriceX96: poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96,
           tick: poolState?.tick ?? pool.initialTick,
           liquidity: poolState?.liquidity,
+          token0Reserve,
+          token1Reserve,
           blockNumber: pool.blockNumber,
           transactionHash: pool.transactionHash,
           chainId,

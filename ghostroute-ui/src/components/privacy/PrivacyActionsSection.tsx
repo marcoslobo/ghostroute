@@ -1,7 +1,8 @@
 /**
  * Privacy Actions Section Component
  *
- * Main container for deposit/withdraw/invest operations with tabbed interface
+ * Main container for deposit/withdraw operations with tabbed interface
+ * Note: Pool investments are now handled via /v4-pools page
  */
 
 'use client';
@@ -10,10 +11,9 @@ import React, { useState } from 'react';
 import { useNotes } from '@/hooks/utxo';
 import { DepositForm } from '@/components/utxo/DepositForm';
 import { WithdrawForm } from '@/components/utxo/WithdrawForm';
-import { InvestmentFlow } from '@/components/utxo/InvestmentFlow';
 import { NotesList } from '@/components/utxo/NotesList';
 
-type TabType = 'deposit' | 'withdraw' | 'invest';
+type TabType = 'deposit' | 'withdraw';
 
 export function PrivacyActionsSection() {
   const [activeTab, setActiveTab] = useState<TabType>('deposit');
@@ -22,7 +22,6 @@ export function PrivacyActionsSection() {
   const tabs: { id: TabType; label: string }[] = [
     { id: 'deposit', label: 'Deposit' },
     { id: 'withdraw', label: 'Withdraw' },
-    { id: 'invest', label: 'Invest' },
   ];
 
   const getTabClasses = (tabId: TabType) => {
@@ -57,7 +56,6 @@ export function PrivacyActionsSection() {
       <div className="mb-8">
         {activeTab === 'deposit' && <DepositForm onComplete={refreshNotes} />}
         {activeTab === 'withdraw' && <WithdrawForm onComplete={refreshNotes} />}
-        {activeTab === 'invest' && <InvestmentFlow />}
       </div>
 
       {/* Notes List */}

@@ -799,6 +799,31 @@ export const getPoolData = async ({
   };
 };
 
+/**
+ * Calculate token reserves from liquidity and sqrtPriceX96
+ * Based on Uniswap V3/V4 math:
+ * - amount0 = liquidity * 2^96 / sqrtPriceX96
+ * - amount1 = liquidity * sqrtPriceX96 / 2^96
+ */
+export const calculateTokenReserves = (
+  liquidity: bigint,
+  sqrtPriceX96: bigint
+): { token0Reserve: bigint; token1Reserve: bigint } => {
+  const Q96 = BigInt(2) ** BigInt(96);
+  
+  if (liquidity === 0n || sqrtPriceX96 === 0n) {
+    return { token0Reserve: 0n, token1Reserve: 0n };
+  }
+  
+  // amount0 = liquidity * 2^96 / sqrtPriceX96
+  const token0Reserve = (liquidity * Q96) / sqrtPriceX96;
+  
+  // amount1 = liquidity * sqrtPriceX96 / 2^96
+  const token1Reserve = (liquidity * sqrtPriceX96) / Q96;
+  
+  return { token0Reserve, token1Reserve };
+};
+
 // Placeholder hook types
 interface AddLiquidityParams {
   poolId: string;
