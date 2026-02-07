@@ -16,9 +16,26 @@ const nextConfig: NextConfig = {
           util: require.resolve('util'),
           buffer: require.resolve('buffer'),
           process: require.resolve('process/browser'),
+          worker_threads: false,
+          path: false,
+          os: false,
+          child_process: false,
         },
       };
     }
+    
+    // Fix for Noir/WebAssembly modules in Vercel
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'worker_threads': false,
+    };
+    
+    // Ignore worker_modules that cause issues in production
+    config.externals = config.externals || [];
+    config.externals.push({
+      'worker_threads': 'worker_threads',
+    });
+    
     return config;
   },
   async headers() {
@@ -34,8 +51,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  turbopack: {
-  },
+
 };
 
 export default nextConfig;
