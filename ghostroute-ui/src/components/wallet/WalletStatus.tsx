@@ -18,8 +18,10 @@ export function WalletStatus() {
 
   if (isConnecting) {
     return (
-      <div className="glass rounded-lg p-4 mt-4 border border-ghost-border flex items-center justify-center">
-        <p className="text-sm text-yellow-500 font-medium">Connecting wallet...</p>
+      <div className="flex items-center justify-center">
+        <div className="px-4 py-2 rounded-lg bg-ghost-card/50 border border-ghost-border/50">
+          <p className="text-sm text-ghost-cyan font-medium animate-pulse">Connecting wallet...</p>
+        </div>
       </div>
     );
   }
@@ -28,26 +30,24 @@ export function WalletStatus() {
     return null;
   }
 
-  const chainName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Ethereum' : chainId === 1301 ? 'Uniswap Sepolia' : `Chain ${chainId}`;
+  const chainName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Ethereum' : `Chain ${chainId}`;
 
   return (
-    <div className="glass rounded-lg p-4 mt-4 border border-ghost-border shadow-card">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm text-muted-foreground">Status</span>
-        <span className="text-sm font-medium text-green-500 flex items-center gap-1">
-          <CheckCircle size={16} /> Connected
-        </span>
+    <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ghost-card/50 border border-ghost-border/50">
+        <CheckCircle size={14} className="text-ghost-cyan" />
+        <span className="text-ghost-cyan font-medium">Connected</span>
       </div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm text-muted-foreground">Address</span>
-        <span className="text-sm font-mono text-foreground">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ghost-card/50 border border-ghost-border/50">
+        <span className="text-muted-foreground">Address:</span>
+        <span className="font-mono text-foreground">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
       </div>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-muted-foreground">Network</span>
-        <span className="text-sm font-medium text-foreground">{chainName}</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ghost-card/50 border border-ghost-border/50">
+        <span className="text-muted-foreground">Network:</span>
+        <span className="font-medium text-foreground">{chainName}</span>
       </div>
       {error && (
-        <div className="mt-2 p-2 bg-red-900/20 border border-red-700 rounded-md text-sm text-red-400 flex items-center gap-1">
+        <div className="w-full mt-2 p-2 bg-destructive/10 border border-destructive/50 rounded-md text-sm text-destructive flex items-center gap-1">
           <XCircle size={16} /> {typeof error === 'string' ? error : (error as Error)?.message || 'An unknown error occurred.'}
         </div>
       )}

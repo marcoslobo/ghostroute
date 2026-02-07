@@ -8,6 +8,8 @@
 
 import React from 'react';
 import { Note } from '@/types/utxo/note';
+import { Card } from '@/components/ui/Card';
+import { Alert } from '@/components/ui/Alert';
 
 interface NotesListProps {
   notes: Note[];
@@ -21,8 +23,10 @@ export function NotesList({ notes, totalBalance }: NotesListProps) {
 
   if (notes.length === 0) {
     return (
-      <div className="mt-6 p-4 border rounded text-center text-gray-500">
-        No notes yet. Deposit to create your first note.
+      <div className="mt-6">
+        <Alert variant="info">
+          <p className="text-center">No notes yet. Deposit to create your first note.</p>
+        </Alert>
       </div>
     );
   }
@@ -38,31 +42,33 @@ export function NotesList({ notes, totalBalance }: NotesListProps) {
 
       <div className="space-y-2">
         {notes.map((note, index) => (
-          <div
+          <Card
             key={note.commitment}
-            className={`p-3 border rounded ${
-              note.spent ? 'bg-gray-50 opacity-60' : 'bg-white'
-            }`}
+            padding="sm"
+            variant={note.spent ? 'default' : 'glass'}
+            className={note.spent ? 'opacity-60' : ''}
           >
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{formatETH(note.value)} ETH</span>
                   {note.spent && (
-                    <span className="text-xs px-2 py-1 bg-gray-200 rounded">Spent</span>
+                    <span className="text-xs px-2 py-0.5 bg-ghost-card border border-ghost-border rounded">
+                      Spent
+                    </span>
                   )}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Commitment: <code className="bg-gray-100 px-1 rounded">{note.commitment.slice(0, 16)}...</code>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Commitment: <code className="bg-ghost-card px-1 rounded">{note.commitment.slice(0, 16)}...</code>
                 </div>
                 {note.createdAt && (
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     Created: {note.createdAt.toLocaleDateString()}
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

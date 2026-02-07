@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  fetchPoolsFromEvents,
+  loadSavedPools,
   fetchTokenInfo,
   fetchPoolState,
   useAddLiquidity,
@@ -14,6 +14,8 @@ import {
 } from '@/lib/uniswap-v4';
 import { Address, parseUnits, formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 
 interface DisplayPoolData extends PoolFromEvent {
   token0Symbol: string;
@@ -54,7 +56,7 @@ export default function V4PoolsPage() {
       setError(null);
 
       try {
-        const poolsFromEvents = await fetchPoolsFromEvents(chainId);
+        const poolsFromEvents = await loadSavedPools(chainId);
         const enrichedPools: DisplayPoolData[] = [];
 
         for (const pool of poolsFromEvents) {
@@ -179,37 +181,44 @@ export default function V4PoolsPage() {
                 <p><strong>Liquidity:</strong> {formatLiquidity(pool.liquidity)}</p>
                 <p className="truncate"><strong>Pool ID:</strong> {pool.poolId.slice(0, 10)}...</p>
               </div>
-              <div className="mt-4 space-x-2">
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm disabled:opacity-50 transition-colors"
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
                   onClick={() => handleAddLiquidity(pool)}
                   disabled={isAddingLiquidity || !isConnected}
                 >
                   {isAddingLiquidity ? 'Adding...' : '+ Liquidity'}
-                </button>
-                <button
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded text-sm disabled:opacity-50 transition-colors"
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
                   onClick={() => handleSwap(pool)}
                   disabled={isSwapping || !isConnected}
                 >
                   {isSwapping ? 'Swapping...' : 'Swap'}
-                </button>
+                </Button>
                 <a
                   href={`${networkConfig.blockExplorer}/tx/${pool.transactionHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors"
                 >
-                  View Tx
+                  <Button size="sm" variant="secondary">
+                    View Tx
+                  </Button>
                 </a>
               </div>
               {(addLiquiditySuccess || swapSuccess) && (
-                <p className="text-green-500 mt-2 text-sm">Transaction successful!</p>
+                <Alert variant="success" className="mt-2">
+                  <span className="text-sm">Transaction successful!</span>
+                </Alert>
               )}
               {(addLiquidityError || swapError) && (
-                <p className="text-red-500 mt-2 text-sm">
-                  Failed: {addLiquidityError?.message || swapError?.message}
-                </p>
+                <Alert variant="error" className="mt-2">
+                  <span className="text-sm">
+                    Failed: {addLiquidityError?.message || swapError?.message}
+                  </span>
+                </Alert>
               )}
             </div>
           ))}

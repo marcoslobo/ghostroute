@@ -1,0 +1,465 @@
+lucasrocha@ip-192-168-100-80 uniswap-pool-creator % npx hardhat run scripts/deployPool.js --network sepolia
+Deploying contracts with the account: 0xCD224a079766AA7eBe42b898e70579e2201ABAe6
+--- Deploying Token A ---
+--- Deploying Token B ---
+Token A deployed to: 0x081414da0a90387a9c223579229d2828415ccF0a
+Token B deployed to: 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+--- Minting Token A ---
+[Mint Token A] Current Nonce: 248
+[Mint Token A] Estimated Gas Limit: 71365
+[Mint Token A] Transaction Hash: 0xe39f89f499e4f09b9b69e779d3095fef40c0bd79b4bf676132417fd75b0eb0ce
+--- Minting Token B ---
+[Mint Token B] Current Nonce: 249
+[Mint Token B] Estimated Gas Limit: 71365
+[Mint Token B] Transaction Hash: 0x9623a806385df3b7e2fe6d06d43a3f6d9a4355d9fe070f82e3fb3b57277b7b82
+Initial supply minted to deployer: 1000000000000000000000000
+Uniswap V4 PoolManager address for sepolia : 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router address for sepolia : 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager address for sepolia : 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+StateView address for sepolia : 0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c
+--- Creating Uniswap V4 pool ---
+Ordered Token 0 (poolKeyForInitialize): 0x081414da0a90387a9c223579229d2828415ccF0a
+Ordered Token 1 (poolKeyForInitialize): 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+[Pool Initialize] Current Nonce: 250
+[Pool Initialize] Estimated Gas Limit: 51925
+[Pool Initialize] Transaction Hash: 0xb4f10abc67ecbc7f40f94c7235ea50541851b679499db719d3f3f5ddd294fd52
+Pool initialized successfully!
+--- Verifying Pool Existence via StateView ---
+Pool ID: 0x10a85f83d5060642499685cd29c8ac5626b427b26080b5fe7e511d9c0e2e7528
+Verified Pool Slot0:
+  - sqrtPriceX96: 79228162514264337593543950336
+  - tick: 0
+  - protocolFee: 0
+  - lpFee: 3000
+Pool verified successfully! Pool exists with non-zero sqrtPriceX96.
+--- Approving tokens for Permit2 ---
+Permit2 address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Token0 (ordered): 0x081414da0a90387a9c223579229d2828415ccF0a
+Token1 (ordered): 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+[Approve Token0 for Permit2] Current Nonce: 251
+[Approve Token0 for Permit2] Estimated Gas Limit: 46918
+[Approve Token0 for Permit2] Transaction Hash: 0xc2ecdfe9324552adda5163505df1b49e5a6fca975f7b82a35fbbf66564769781
+[Approve Token1 for Permit2] Current Nonce: 252
+[Approve Token1 for Permit2] Estimated Gas Limit: 46918
+[Approve Token1 for Permit2] Transaction Hash: 0xca0aed28f7c5ceb8a4493ff89389ae4c6c8e47f1d8cd99fed8c3bba51f98ac30
+Tokens approved for Permit2.
+--- Approving PositionManager on Permit2 ---
+[Permit2 approve Token0 for PositionManager] Current Nonce: 253
+[Permit2 approve Token0 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token0 for PositionManager] Transaction Hash: 0x3c56eac5c1455f0c2d534219a01420dfb835db7c4040c06088e0bd7c6be0bb5f
+[Permit2 approve Token1 for PositionManager] Current Nonce: 254
+[Permit2 approve Token1 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token1 for PositionManager] Transaction Hash: 0x228b862d30783b2c7e138dc0ee8c932e0094f6f8281b6a328af743bf8818c986
+PositionManager approved on Permit2 for both tokens.
+--- Adding liquidity via PositionManager.modifyLiquidities ---
+Actions: 0x020d11
+Unlock data length: 1858
+[PositionManager Mint Liquidity via modifyLiquidities] Current Nonce: 255
+[PositionManager Mint Liquidity via modifyLiquidities] Estimated Gas Limit: 420957
+[PositionManager Mint Liquidity via modifyLiquidities] Transaction Hash: 0xbe71469e2fc636398092c700b0742d6d6854e20d803762e953579721d30ffbea
+Liquidity added via PositionManager!
+
+--- Deployment and Pool Setup Complete ---
+Deployed Token A: 0x081414da0a90387a9c223579229d2828415ccF0a
+Deployed Token B: 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+Uniswap V4 PoolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router: 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+Pool ID: 0x10a85f83d5060642499685cd29c8ac5626b427b26080b5fe7e511d9c0e2e7528
+Pool Fee: 3000
+Pool Tick Spacing: 10
+Initial Liquidity Provided (example): 1000000000000000000000000
+
+To retrieve pool list in frontend, you would typically:
+- Query 'Initialize' events from PoolManager to discover pool IDs
+- Use StateView.getSlot0(poolId) to verify pool exists and get current price
+- Use StateView.getLiquidity(poolId) to get current liquidity
+
+Example code for frontend pool discovery:
+
+  // 1. Query Initialize events from PoolManager
+  const filter = poolManager.filters.Initialize();
+  const events = await poolManager.queryFilter(filter, fromBlock, toBlock);
+
+  // 2. For each event, extract pool info
+  events.forEach(event => {
+    const { id, currency0, currency1, fee, tickSpacing, hooks, sqrtPriceX96, tick } = event.args;
+    console.log('Pool ID:', id);
+  });
+
+  // 3. Verify pool state via StateView
+  const slot0 = await stateView.getSlot0(poolId);
+  const liquidity = await stateView.getLiquidity(poolId);
+  
+lucasrocha@ip-192-168-100-80 uniswap-pool-creator % npx hardhat run scripts/deployPool.js --network sepolia
+Deploying contracts with the account: 0xCD224a079766AA7eBe42b898e70579e2201ABAe6
+--- Deploying Token A ---
+--- Deploying Token B ---
+Token A deployed to: 0x081414da0a90387a9c223579229d2828415ccF0a
+Token B deployed to: 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+--- Minting Token A ---
+[Mint Token A] Current Nonce: 248
+[Mint Token A] Estimated Gas Limit: 71365
+[Mint Token A] Transaction Hash: 0xe39f89f499e4f09b9b69e779d3095fef40c0bd79b4bf676132417fd75b0eb0ce
+--- Minting Token B ---
+[Mint Token B] Current Nonce: 249
+[Mint Token B] Estimated Gas Limit: 71365
+[Mint Token B] Transaction Hash: 0x9623a806385df3b7e2fe6d06d43a3f6d9a4355d9fe070f82e3fb3b57277b7b82
+Initial supply minted to deployer: 1000000000000000000000000
+Uniswap V4 PoolManager address for sepolia : 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router address for sepolia : 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager address for sepolia : 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+StateView address for sepolia : 0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c
+--- Creating Uniswap V4 pool ---
+Ordered Token 0 (poolKeyForInitialize): 0x081414da0a90387a9c223579229d2828415ccF0a
+Ordered Token 1 (poolKeyForInitialize): 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+[Pool Initialize] Current Nonce: 250
+[Pool Initialize] Estimated Gas Limit: 51925
+[Pool Initialize] Transaction Hash: 0xb4f10abc67ecbc7f40f94c7235ea50541851b679499db719d3f3f5ddd294fd52
+Pool initialized successfully!
+--- Verifying Pool Existence via StateView ---
+Pool ID: 0x10a85f83d5060642499685cd29c8ac5626b427b26080b5fe7e511d9c0e2e7528
+Verified Pool Slot0:
+  - sqrtPriceX96: 79228162514264337593543950336
+  - tick: 0
+  - protocolFee: 0
+  - lpFee: 3000
+Pool verified successfully! Pool exists with non-zero sqrtPriceX96.
+--- Approving tokens for Permit2 ---
+Permit2 address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Token0 (ordered): 0x081414da0a90387a9c223579229d2828415ccF0a
+Token1 (ordered): 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+[Approve Token0 for Permit2] Current Nonce: 251
+[Approve Token0 for Permit2] Estimated Gas Limit: 46918
+[Approve Token0 for Permit2] Transaction Hash: 0xc2ecdfe9324552adda5163505df1b49e5a6fca975f7b82a35fbbf66564769781
+[Approve Token1 for Permit2] Current Nonce: 252
+[Approve Token1 for Permit2] Estimated Gas Limit: 46918
+[Approve Token1 for Permit2] Transaction Hash: 0xca0aed28f7c5ceb8a4493ff89389ae4c6c8e47f1d8cd99fed8c3bba51f98ac30
+Tokens approved for Permit2.
+--- Approving PositionManager on Permit2 ---
+[Permit2 approve Token0 for PositionManager] Current Nonce: 253
+[Permit2 approve Token0 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token0 for PositionManager] Transaction Hash: 0x3c56eac5c1455f0c2d534219a01420dfb835db7c4040c06088e0bd7c6be0bb5f
+[Permit2 approve Token1 for PositionManager] Current Nonce: 254
+[Permit2 approve Token1 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token1 for PositionManager] Transaction Hash: 0x228b862d30783b2c7e138dc0ee8c932e0094f6f8281b6a328af743bf8818c986
+PositionManager approved on Permit2 for both tokens.
+--- Adding liquidity via PositionManager.modifyLiquidities ---
+Actions: 0x020d11
+Unlock data length: 1858
+[PositionManager Mint Liquidity via modifyLiquidities] Current Nonce: 255
+[PositionManager Mint Liquidity via modifyLiquidities] Estimated Gas Limit: 420957
+[PositionManager Mint Liquidity via modifyLiquidities] Transaction Hash: 0xbe71469e2fc636398092c700b0742d6d6854e20d803762e953579721d30ffbea
+Liquidity added via PositionManager!
+
+--- Deployment and Pool Setup Complete ---
+Deployed Token A: 0x081414da0a90387a9c223579229d2828415ccF0a
+Deployed Token B: 0xF5CFf6Cccfe0690f712b7A017a4a69Fb1B5B7c35
+Uniswap V4 PoolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router: 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+Pool ID: 0x10a85f83d5060642499685cd29c8ac5626b427b26080b5fe7e511d9c0e2e7528
+Pool Fee: 3000
+Pool Tick Spacing: 10
+Initial Liquidity Provided (example): 1000000000000000000000000
+
+To retrieve pool list in frontend, you would typically:
+- Query 'Initialize' events from PoolManager to discover pool IDs
+- Use StateView.getSlot0(poolId) to verify pool exists and get current price
+- Use StateView.getLiquidity(poolId) to get current liquidity
+
+Example code for frontend pool discovery:
+
+  // 1. Query Initialize events from PoolManager
+  const filter = poolManager.filters.Initialize();
+  const events = await poolManager.queryFilter(filter, fromBlock, toBlock);
+
+  // 2. For each event, extract pool info
+  events.forEach(event => {
+    const { id, currency0, currency1, fee, tickSpacing, hooks, sqrtPriceX96, tick } = event.args;
+    console.log('Pool ID:', id);
+  });
+
+  // 3. Verify pool state via StateView
+  const slot0 = await stateView.getSlot0(poolId);
+  const liquidity = await stateView.getLiquidity(poolId);
+  
+lucasrocha@ip-192-168-100-80 uniswap-pool-creator % npx hardhat run scripts/deployPool.js --network sepolia
+Deploying contracts with the account: 0xCD224a079766AA7eBe42b898e70579e2201ABAe6
+--- Deploying Token A ---
+--- Deploying Token B ---
+Token A deployed to: 0xaf3ED8eA2a765b84Dfcd9f37e9edb2FE23c58067
+Token B deployed to: 0xa4c974F12CfA33a3Ab567a89d3bF1e708189cd0e
+--- Minting Token A ---
+[Mint Token A] Current Nonce: 258
+[Mint Token A] Estimated Gas Limit: 71365
+[Mint Token A] Transaction Hash: 0xdcdf61e805c268d79c1e6ff39de9d6310062347ad501ff111a90775ecba9eb24
+--- Minting Token B ---
+[Mint Token B] Current Nonce: 259
+[Mint Token B] Estimated Gas Limit: 71365
+[Mint Token B] Transaction Hash: 0x45de5007046461c49c0bcbf4d4af013e662df42e97cc410c8eb2c87b30e82a47
+Initial supply minted to deployer: 1000000000000000000000000
+Uniswap V4 PoolManager address for sepolia : 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router address for sepolia : 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager address for sepolia : 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+StateView address for sepolia : 0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c
+--- Creating Uniswap V4 pool ---
+Ordered Token 0 (poolKeyForInitialize): 0xa4c974F12CfA33a3Ab567a89d3bF1e708189cd0e
+Ordered Token 1 (poolKeyForInitialize): 0xaf3ED8eA2a765b84Dfcd9f37e9edb2FE23c58067
+[Pool Initialize] Current Nonce: 260
+[Pool Initialize] Estimated Gas Limit: 51925
+[Pool Initialize] Transaction Hash: 0x535a8c556babb37a449c4b72c52d9cf8423ffa7d9469bae8ddeff7d84c470fad
+Pool initialized successfully!
+--- Verifying Pool Existence via StateView ---
+Pool ID: 0x7b42a2e45826ba52db3fc623145171e6a4b32566cef885187d8cf9f9a6c38980
+Verified Pool Slot0:
+  - sqrtPriceX96: 79228162514264337593543950336
+  - tick: 0
+  - protocolFee: 0
+  - lpFee: 3000
+Pool verified successfully! Pool exists with non-zero sqrtPriceX96.
+--- Approving tokens for Permit2 ---
+Permit2 address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Token0 (ordered): 0xa4c974F12CfA33a3Ab567a89d3bF1e708189cd0e
+Token1 (ordered): 0xaf3ED8eA2a765b84Dfcd9f37e9edb2FE23c58067
+[Approve Token0 for Permit2] Current Nonce: 261
+[Approve Token0 for Permit2] Estimated Gas Limit: 46918
+[Approve Token0 for Permit2] Transaction Hash: 0xd792942e65dcb4d08570efe4c3d6c6f031aaffd3ca7ac44449c9b8d1eec86d72
+[Approve Token1 for Permit2] Current Nonce: 262
+[Approve Token1 for Permit2] Estimated Gas Limit: 46918
+[Approve Token1 for Permit2] Transaction Hash: 0xf6dd5ea6d748144e0f9f0474172d15f9b3ab2cdae3e27e166eda5333633bda03
+Tokens approved for Permit2.
+--- Approving PositionManager on Permit2 ---
+[Permit2 approve Token0 for PositionManager] Current Nonce: 263
+[Permit2 approve Token0 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token0 for PositionManager] Transaction Hash: 0x2ce61883c5b67fe5cfb75ca742bc45d02499550381fe0ceb876525fa07777e05
+[Permit2 approve Token1 for PositionManager] Current Nonce: 264
+[Permit2 approve Token1 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token1 for PositionManager] Transaction Hash: 0x79ab70cd7e9b1cf1d3ae864ca1ecdc8e2c7ad12edc9b4f54d3dcbd91309a090a
+PositionManager approved on Permit2 for both tokens.
+--- Adding liquidity via PositionManager.modifyLiquidities ---
+Actions: 0x020d11
+Unlock data length: 1858
+[PositionManager Mint Liquidity via modifyLiquidities] Current Nonce: 265
+[PositionManager Mint Liquidity via modifyLiquidities] Estimated Gas Limit: 420957
+[PositionManager Mint Liquidity via modifyLiquidities] Transaction Hash: 0xab1454061c52ded1c42624e76ff39c5ee587aa4a27674dee24e69694df64f7d0
+Liquidity added via PositionManager!
+
+--- Deployment and Pool Setup Complete ---
+Deployed Token A: 0xaf3ED8eA2a765b84Dfcd9f37e9edb2FE23c58067
+Deployed Token B: 0xa4c974F12CfA33a3Ab567a89d3bF1e708189cd0e
+Uniswap V4 PoolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router: 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+Pool ID: 0x7b42a2e45826ba52db3fc623145171e6a4b32566cef885187d8cf9f9a6c38980
+Pool Fee: 3000
+Pool Tick Spacing: 10
+Initial Liquidity Provided (example): 1000000000000000000000000
+
+To retrieve pool list in frontend, you would typically:
+- Query 'Initialize' events from PoolManager to discover pool IDs
+- Use StateView.getSlot0(poolId) to verify pool exists and get current price
+- Use StateView.getLiquidity(poolId) to get current liquidity
+
+Example code for frontend pool discovery:
+
+  // 1. Query Initialize events from PoolManager
+  const filter = poolManager.filters.Initialize();
+  const events = await poolManager.queryFilter(filter, fromBlock, toBlock);
+
+  // 2. For each event, extract pool info
+  events.forEach(event => {
+    const { id, currency0, currency1, fee, tickSpacing, hooks, sqrtPriceX96, tick } = event.args;
+    console.log('Pool ID:', id);
+  });
+
+  // 3. Verify pool state via StateView
+  const slot0 = await stateView.getSlot0(poolId);
+  const liquidity = await stateView.getLiquidity(poolId);
+
+  lucasrocha@ip-192-168-100-80 uniswap-pool-creator % npx hardhat run scripts/deployPool.js --network sepolia
+Deploying contracts with the account: 0xCD224a079766AA7eBe42b898e70579e2201ABAe6
+--- Deploying Token A ---
+--- Deploying Token B ---
+Token A deployed to: 0xcA284396DF82C1AdC1d6970cBAFED547078c39E1
+Token B deployed to: 0x6866492d8ed5792A981Fdaf1aDC45c617cA5b690
+--- Minting Token A ---
+[Mint Token A] Current Nonce: 268
+[Mint Token A] Estimated Gas Limit: 71365
+[Mint Token A] Transaction Hash: 0xded5efbc83d13ca7b9732d6b19dbafbaea8a3e1181965db796d110db35be1199
+--- Minting Token B ---
+[Mint Token B] Current Nonce: 269
+[Mint Token B] Estimated Gas Limit: 71365
+[Mint Token B] Transaction Hash: 0xa7e83a5c4ef04d106805bd53d7bddd39b5fdbcd9e21d2f07d1dd15c2cd20a27e
+Initial supply minted to deployer: 1000000000000000000000000
+Uniswap V4 PoolManager address for sepolia : 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router address for sepolia : 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager address for sepolia : 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+StateView address for sepolia : 0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c
+--- Creating Uniswap V4 pool ---
+Ordered Token 0 (poolKeyForInitialize): 0x6866492d8ed5792A981Fdaf1aDC45c617cA5b690
+Ordered Token 1 (poolKeyForInitialize): 0xcA284396DF82C1AdC1d6970cBAFED547078c39E1
+[Pool Initialize] Current Nonce: 270
+[Pool Initialize] Estimated Gas Limit: 51925
+[Pool Initialize] Transaction Hash: 0x3125bb1a6a90da61ccc7512735572011e83771d40efef2a3e4eba791795f2c57
+Pool initialized successfully!
+--- Verifying Pool Existence via StateView ---
+Pool ID: 0x62e2b64f427201f01c26a3345012599bec65117c02ef43ffc7efefbe407d23d2
+Verified Pool Slot0:
+  - sqrtPriceX96: 79228162514264337593543950336
+  - tick: 0
+  - protocolFee: 0
+  - lpFee: 3000
+Pool verified successfully! Pool exists with non-zero sqrtPriceX96.
+--- Approving tokens for Permit2 ---
+Permit2 address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Token0 (ordered): 0x6866492d8ed5792A981Fdaf1aDC45c617cA5b690
+Token1 (ordered): 0xcA284396DF82C1AdC1d6970cBAFED547078c39E1
+[Approve Token0 for Permit2] Current Nonce: 271
+[Approve Token0 for Permit2] Estimated Gas Limit: 46918
+[Approve Token0 for Permit2] Transaction Hash: 0xb6e263c4683cb931aa986426d9f410c8da53d48bcf56599e78a99b70a3bf0849
+[Approve Token1 for Permit2] Current Nonce: 272
+[Approve Token1 for Permit2] Failed to estimate gas or build tx request: HH110: Invalid JSON-RPC response received: upstream connect error or disconnect/reset before headers. reset reason: connection termination
+[Approve Token1 for Permit2] Using fallback Gas Limit: 6000000
+[Approve Token1 for Permit2] Transaction Hash: 0xc4af47bd7b47a2b76d89f440fe62072bad7bd548669726307a62ee0cce374850
+Tokens approved for Permit2.
+--- Approving PositionManager on Permit2 ---
+[Permit2 approve Token0 for PositionManager] Current Nonce: 273
+[Permit2 approve Token0 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token0 for PositionManager] Transaction Hash: 0x83bb9171cafb879366fc533f01ab3176fc039577484a33e70042750ad6238f94
+[Permit2 approve Token1 for PositionManager] Current Nonce: 274
+[Permit2 approve Token1 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token1 for PositionManager] Transaction Hash: 0x87c894cbadbd3c4abcaaa607a3087123c2d8a39882cc58a46d1591f2a3ec6ec2
+PositionManager approved on Permit2 for both tokens.
+--- Adding liquidity via PositionManager.modifyLiquidities ---
+Actions: 0x020d11
+Unlock data length: 1858
+[PositionManager Mint Liquidity via modifyLiquidities] Current Nonce: 275
+[PositionManager Mint Liquidity via modifyLiquidities] Estimated Gas Limit: 420957
+[PositionManager Mint Liquidity via modifyLiquidities] Transaction Hash: 0x6564fb55950503ef908ebcc81e32f5c5a56dac8a81b468784842216e2ea4fb5b
+Liquidity added via PositionManager!
+
+--- Deployment and Pool Setup Complete ---
+Deployed Token A: 0xcA284396DF82C1AdC1d6970cBAFED547078c39E1
+Deployed Token B: 0x6866492d8ed5792A981Fdaf1aDC45c617cA5b690
+Uniswap V4 PoolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router: 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+Pool ID: 0x62e2b64f427201f01c26a3345012599bec65117c02ef43ffc7efefbe407d23d2
+Pool Fee: 3000
+Pool Tick Spacing: 10
+Initial Liquidity Provided (example): 1000000000000000000000000
+
+To retrieve pool list in frontend, you would typically:
+- Query 'Initialize' events from PoolManager to discover pool IDs
+- Use StateView.getSlot0(poolId) to verify pool exists and get current price
+- Use StateView.getLiquidity(poolId) to get current liquidity
+
+Example code for frontend pool discovery:
+
+  // 1. Query Initialize events from PoolManager
+  const filter = poolManager.filters.Initialize();
+  const events = await poolManager.queryFilter(filter, fromBlock, toBlock);
+
+  // 2. For each event, extract pool info
+  events.forEach(event => {
+    const { id, currency0, currency1, fee, tickSpacing, hooks, sqrtPriceX96, tick } = event.args;
+    console.log('Pool ID:', id);
+  });
+
+  // 3. Verify pool state via StateView
+  const slot0 = await stateView.getSlot0(poolId);
+  const liquidity = await stateView.getLiquidity(poolId);
+
+  lucasrocha@ip-192-168-100-80 uniswap-pool-creator % npx hardhat run scripts/deployPool.js --network sepolia
+Deploying contracts with the account: 0xCD224a079766AA7eBe42b898e70579e2201ABAe6
+--- Deploying Token A ---
+--- Deploying Token B ---
+Token A deployed to: 0x02fED5fbcdd64046a6af8804aDCd6A27C278D0B6
+Token B deployed to: 0x00BCFD2D9944eF6dB19Af8C098bA90F9c367c499
+--- Minting Token A ---
+[Mint Token A] Current Nonce: 278
+[Mint Token A] Estimated Gas Limit: 71365
+[Mint Token A] Transaction Hash: 0xf6e28febe490f7055ac3f1746fd6b70bf0a011fd8e416f9f65ff6806020007db
+--- Minting Token B ---
+[Mint Token B] Current Nonce: 279
+[Mint Token B] Estimated Gas Limit: 71365
+[Mint Token B] Transaction Hash: 0x93c2406dbc2ca096f4cc939f82a23e803ba4ee485e034abb868d6dc033684bde
+Initial supply minted to deployer: 1000000000000000000000000
+Uniswap V4 PoolManager address for sepolia : 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router address for sepolia : 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager address for sepolia : 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+StateView address for sepolia : 0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c
+--- Creating Uniswap V4 pool ---
+Ordered Token 0 (poolKeyForInitialize): 0x00BCFD2D9944eF6dB19Af8C098bA90F9c367c499
+Ordered Token 1 (poolKeyForInitialize): 0x02fED5fbcdd64046a6af8804aDCd6A27C278D0B6
+[Pool Initialize] Current Nonce: 280
+[Pool Initialize] Estimated Gas Limit: 51913
+[Pool Initialize] Transaction Hash: 0xd4cc935f75407016ecb98d6bcaafe942eeab38fc2de00f8a518f49f2ad196b5d
+Pool initialized successfully!
+--- Verifying Pool Existence via StateView ---
+Pool ID: 0x9ac1fcd38c0586f351db864f9eb16d6f4fd069ecbe643548825548d9866765d5
+Verified Pool Slot0:
+  - sqrtPriceX96: 79228162514264337593543950336
+  - tick: 0
+  - protocolFee: 0
+  - lpFee: 3000
+Pool verified successfully! Pool exists with non-zero sqrtPriceX96.
+--- Approving tokens for Permit2 ---
+Permit2 address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Token0 (ordered): 0x00BCFD2D9944eF6dB19Af8C098bA90F9c367c499
+Token1 (ordered): 0x02fED5fbcdd64046a6af8804aDCd6A27C278D0B6
+[Approve Token0 for Permit2] Current Nonce: 281
+[Approve Token0 for Permit2] Estimated Gas Limit: 46918
+[Approve Token0 for Permit2] Transaction Hash: 0x80cf1d265351fd5a6e70b92e08b45e281b0a91112f60b044887d257176269e3c
+[Approve Token1 for Permit2] Current Nonce: 282
+[Approve Token1 for Permit2] Estimated Gas Limit: 46918
+[Approve Token1 for Permit2] Transaction Hash: 0x4eea4d9b8c3993ed6cc0ad3f3135b4278ecafa2a64468d6c0c19f8d36713f7b6
+Tokens approved for Permit2.
+--- Approving PositionManager on Permit2 ---
+[Permit2 approve Token0 for PositionManager] Current Nonce: 283
+[Permit2 approve Token0 for PositionManager] Estimated Gas Limit: 48192
+[Permit2 approve Token0 for PositionManager] Transaction Hash: 0x94f261852fd2d081a2983e775d54fa749edbf3741e6c9d8bd11d5d18f3af6b56
+[Permit2 approve Token1 for PositionManager] Current Nonce: 284
+[Permit2 approve Token1 for PositionManager] Estimated Gas Limit: 48204
+[Permit2 approve Token1 for PositionManager] Transaction Hash: 0x6ffcccfbab124866ffca4a27416a29350ab9f56c9001b6752659f552f26ce6df
+PositionManager approved on Permit2 for both tokens.
+--- Adding liquidity via PositionManager.modifyLiquidities ---
+Actions: 0x020d11
+Unlock data length: 1858
+[PositionManager Mint Liquidity via modifyLiquidities] Current Nonce: 285
+[PositionManager Mint Liquidity via modifyLiquidities] Estimated Gas Limit: 420919
+[PositionManager Mint Liquidity via modifyLiquidities] Transaction Hash: 0x2bf7ec7e22318f76a9d48a7c3dcadf7a4ef2d82249079ea30618b55e5e996746
+Liquidity added via PositionManager!
+
+--- Deployment and Pool Setup Complete ---
+Deployed Token A: 0x02fED5fbcdd64046a6af8804aDCd6A27C278D0B6
+Deployed Token B: 0x00BCFD2D9944eF6dB19Af8C098bA90F9c367c499
+Uniswap V4 PoolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543
+Universal Router: 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+Position Manager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4
+Pool ID: 0x9ac1fcd38c0586f351db864f9eb16d6f4fd069ecbe643548825548d9866765d5
+Pool Fee: 3000
+Pool Tick Spacing: 10
+Initial Liquidity Provided (example): 1000000000000000000000000
+
+To retrieve pool list in frontend, you would typically:
+- Query 'Initialize' events from PoolManager to discover pool IDs
+- Use StateView.getSlot0(poolId) to verify pool exists and get current price
+- Use StateView.getLiquidity(poolId) to get current liquidity
+
+Example code for frontend pool discovery:
+
+  // 1. Query Initialize events from PoolManager
+  const filter = poolManager.filters.Initialize();
+  const events = await poolManager.queryFilter(filter, fromBlock, toBlock);
+
+  // 2. For each event, extract pool info
+  events.forEach(event => {
+    const { id, currency0, currency1, fee, tickSpacing, hooks, sqrtPriceX96, tick } = event.args;
+    console.log('Pool ID:', id);
+  });
+
+  // 3. Verify pool state via StateView
+  const slot0 = await stateView.getSlot0(poolId);
+  const liquidity = await stateView.getLiquidity(poolId);

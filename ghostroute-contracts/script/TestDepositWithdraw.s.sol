@@ -28,7 +28,7 @@ contract TestDepositWithdraw is Script {
             deployerPrivateKey = key;
         } catch {
             // For testing, allow passing via script arguments (not recommended for production)
-            deployerPrivateKey = REDACTED_PRIVATE_KEY;
+            deployerPrivateKey = 0x23c8c1793dcd4d7d9265f9cb23110287166ba8ee73ebb4e1acc1a205e2e42531;
         }
         
         address deployer = vm.addr(deployerPrivateKey);
