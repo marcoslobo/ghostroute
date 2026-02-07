@@ -1,8 +1,7 @@
 /**
  * Complete PrivacyVault ABI with deposit, withdraw, executeAction functions
  *
- * Contract deployed on Sepolia: 0x3e078e8af9aBaf8156Beca429A1d35B9398a2208
- * Verifier: 0x2F669A07A17E664D2168b9CD5e8EF6AB5dcFe70d (placeholder, always returns true)
+ * Contract deployed on Sepolia
  */
 
 export const PRIVACY_VAULT_ABI = [
@@ -20,6 +19,40 @@ export const PRIVACY_VAULT_ABI = [
     stateMutability: 'payable',
   },
 
+  // Deposit with Permit2 (supports ERC20 tokens)
+  {
+    type: 'function',
+    name: 'depositWithPermit',
+    inputs: [
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'commitment', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'nullifier', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'permit', type: 'tuple', internalType: 'tuple' },
+      { name: 'signature', type: 'bytes', internalType: 'bytes' },
+    ],
+    outputs: [
+      { name: 'leafIndex', type: 'uint256', internalType: 'uint256' },
+    ],
+    stateMutability: 'payable',
+  },
+
+  // Deposit ERC20 tokens (uses transferFrom, requires prior approval)
+  {
+    type: 'function',
+    name: 'depositERC20',
+    inputs: [
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'commitment', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'nullifier', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [
+      { name: 'leafIndex', type: 'uint256', internalType: 'uint256' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+
   // Withdraw ETH to recipient
   {
     type: 'function',
@@ -30,6 +63,24 @@ export const PRIVACY_VAULT_ABI = [
       { name: 'nullifierHash', type: 'bytes32', internalType: 'bytes32' },
       { name: 'changeCommitment', type: 'bytes32', internalType: 'bytes32' },
       { name: 'recipient', type: 'address', internalType: 'address payable' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+
+  // Withdraw ERC20 tokens using a ZK proof
+  {
+    type: 'function',
+    name: 'withdrawERC20',
+    inputs: [
+      { name: 'proof', type: 'bytes', internalType: 'bytes' },
+      { name: 'root', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'nullifierHash', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'changeCommitment', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'actionHash', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'recipient', type: 'address', internalType: 'address' },
       { name: 'amount', type: 'uint256', internalType: 'uint256' },
     ],
     outputs: [],
@@ -64,32 +115,22 @@ export const PRIVACY_VAULT_ABI = [
     stateMutability: 'view',
   },
 
-  // Get Merkle root (alias)
+  // Check if token is allowed
   {
     type: 'function',
-    name: 'getMerkleRoot',
-    inputs: [],
-    outputs: [
-      { name: '', type: 'bytes32', internalType: 'bytes32' },
-    ],
+    name: 'isTokenAllowed',
+    inputs: [{ name: 'token', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
     stateMutability: 'view',
   },
 
-  // Compute action hash for Uniswap
+  // Get token balance in vault
   {
     type: 'function',
-    name: 'computeActionHash',
-    inputs: [
-      { name: 'poolId', type: 'bytes32', internalType: 'bytes32' },
-      { name: 'tickLower', type: 'int24', internalType: 'int24' },
-      { name: 'tickUpper', type: 'int24', internalType: 'int24' },
-      { name: 'amount0', type: 'uint256', internalType: 'uint256' },
-      { name: 'amount1', type: 'uint256', internalType: 'uint256' },
-    ],
-    outputs: [
-      { name: '', type: 'bytes32', internalType: 'bytes32' },
-    ],
-    stateMutability: 'pure',
+    name: 'getTokenBalance',
+    inputs: [{ name: 'token', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
   },
 
   // Check if nullifier has been used
@@ -98,19 +139,6 @@ export const PRIVACY_VAULT_ABI = [
     name: 'isNullifierUsed',
     inputs: [
       { name: 'nullifier', type: 'bytes32', internalType: 'bytes32' },
-    ],
-    outputs: [
-      { name: '', type: 'bool', internalType: 'bool' },
-    ],
-    stateMutability: 'view',
-  },
-
-  // Check if commitment exists
-  {
-    type: 'function',
-    name: 'commitments',
-    inputs: [
-      { name: 'commitment', type: 'bytes32', internalType: 'bytes32' },
     ],
     outputs: [
       { name: '', type: 'bool', internalType: 'bool' },
@@ -129,6 +157,35 @@ export const PRIVACY_VAULT_ABI = [
       { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
       { name: 'leafIndex', type: 'uint256', indexed: false, internalType: 'uint256' },
       { name: 'newRoot', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+    ],
+    anonymous: false,
+  },
+
+  // Anonymous ETH Withdrawal
+  {
+    type: 'event',
+    name: 'AnonymousWithdrawal',
+    inputs: [
+      { name: 'nullifier', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+      { name: 'recipient', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'changeCommitment', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+      { name: 'changeIndex', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+
+  // Anonymous ERC20 Withdrawal
+  {
+    type: 'event',
+    name: 'AnonymousERC20Withdrawal',
+    inputs: [
+      { name: 'nullifier', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+      { name: 'token', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'recipient', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'changeCommitment', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+      { name: 'changeIndex', type: 'uint256', indexed: false, internalType: 'uint256' },
     ],
     anonymous: false,
   },

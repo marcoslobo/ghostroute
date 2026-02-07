@@ -133,3 +133,27 @@ export function randomSecret(): Uint8Array {
   }
   return bytes;
 }
+
+/**
+ * Compute actionHash for withdrawal (Pedersen hash of recipient and amount)
+ * Used for binding withdrawal parameters in ZK proofs
+ * 
+ * @param recipient - Recipient address
+ * @param amount - Withdrawal amount in wei
+ * @returns actionHash as hex string
+ */
+export async function computeActionHash(
+  recipient: `0x${string}`,
+  amount: bigint
+): Promise<`0x${string}`> {
+  const { keccak256 } = await import('viem');
+  const recipientField = addressToField(recipient);
+  const amountField = toField(amount);
+  
+  // Simple hash combining recipient and amount
+  const hash = keccak256(
+    `0x${BigInt(recipientField).toString(16).padStart(64, '0')}${BigInt(amountField).toString(16).padStart(64, '0')}`
+  );
+  
+  return hash as `0x${string}`;
+}

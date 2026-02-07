@@ -4,6 +4,7 @@ export interface WithdrawParams {
   inputNote: Note;
   withdrawAmount: bigint;
   recipient: `0x${string}`;
+  token?: `0x${string}`; // Optional: for ERC20 withdrawals
 }
 
 export interface WithdrawResult {
