@@ -12,8 +12,9 @@ import { useNotes } from '@/hooks/utxo';
 import { DepositForm } from '@/components/utxo/DepositForm';
 import { WithdrawForm } from '@/components/utxo/WithdrawForm';
 import { NotesList } from '@/components/utxo/NotesList';
+import { BackupSection } from '@/components/privacy/BackupSection';
 
-type TabType = 'deposit' | 'withdraw';
+type TabType = 'deposit' | 'withdraw' | 'backup' | 'notes';
 
 export function PrivacyActionsSection() {
   const [activeTab, setActiveTab] = useState<TabType>('deposit');
@@ -22,6 +23,8 @@ export function PrivacyActionsSection() {
   const tabs: { id: TabType; label: string }[] = [
     { id: 'deposit', label: 'Deposit' },
     { id: 'withdraw', label: 'Withdraw' },
+    { id: 'notes', label: 'Your Notes' },
+    { id: 'backup', label: 'Backup' },
   ];
 
   const getTabClasses = (tabId: TabType) => {
@@ -56,10 +59,9 @@ export function PrivacyActionsSection() {
       <div className="mb-8">
         {activeTab === 'deposit' && <DepositForm onComplete={refreshNotes} />}
         {activeTab === 'withdraw' && <WithdrawForm onComplete={refreshNotes} />}
+        {activeTab === 'notes' && <NotesList notes={notes} totalBalance={totalBalance} />}
+        {activeTab === 'backup' && <BackupSection />}
       </div>
-
-      {/* Notes List */}
-      <NotesList notes={notes} totalBalance={totalBalance} />
     </div>
   );
 }
