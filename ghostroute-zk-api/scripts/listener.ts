@@ -16,6 +16,8 @@ const EVENT_SIGNATURES: Record<string, string> = {
   Deposit: "Deposit(bytes32,bytes32,address,uint256,uint256,bytes32)",
   MerkleRootUpdated: "MerkleRootUpdated(bytes32,bytes32,uint256)",
   ActionExecuted: "ActionExecuted(bytes32,bytes32,bytes32,uint256,uint256,uint256)",
+  AnonymousWithdrawal: "AnonymousWithdrawal(bytes32,address,uint256,bytes32,uint256)",
+  AnonymousERC20Withdrawal: "AnonymousERC20Withdrawal(bytes32,address,address,uint256,bytes32,uint256)",
 };
 
 interface VaultEvent {
@@ -191,6 +193,36 @@ class GhostRouteListener {
         args.nullifier = log.topics[2] || "0x0";
         args.token = log.topics[3] || "0x0";
         // Decode data field for remaining args
+      }
+
+      // Parse AnonymousWithdrawal (ETH) event
+      // Indexed: nullifierHash (topic1), recipient (topic2)
+      // Data: amount (uint256), changeCommitment (bytes32), changeIndex (uint256)
+      if (eventName === "AnonymousWithdrawal") {
+        args.nullifierHash = log.topics[1] || "0x0";
+        args.recipient = log.topics[2] ? ("0x" + (log.topics[2] as string).slice(26)) : "0x0";
+        const data = (log.data as string) || "0x";
+        if (data.length >= 194) {
+          args.amount = BigInt("0x" + data.slice(2, 66)).toString();
+          args.changeCommitment = "0x" + data.slice(66, 130);
+          args.changeIndex = parseInt(data.slice(130, 194), 16).toString();
+        }
+      }
+
+      // Parse AnonymousERC20Withdrawal event
+      // Indexed: nullifierHash (topic1), token (topic2), recipient (topic3)
+      // Data: amount (uint256), changeCommitment (bytes32), changeIndex (uint256)
+      if (eventName === "AnonymousERC20Withdrawal") {
+        args.nullifierHash = log.topics[1] || "0x0";
+        args.token = log.topics[2] ? ("0x" + (log.topics[2] as string).slice(26)) : "0x0";
+        args.recipient = log.topics[3] ? ("0x" + (log.topics[3] as string).slice(26)) : "0x0";
+        // Decode data field (3 x 32 bytes = 192 hex chars after 0x)
+        const data = (log.data as string) || "0x";
+        if (data.length >= 194) {
+          args.amount = BigInt("0x" + data.slice(2, 66)).toString();
+          args.changeCommitment = "0x" + data.slice(66, 130);
+          args.changeIndex = parseInt(data.slice(130, 194), 16).toString();
+        }
       }
 
       return {

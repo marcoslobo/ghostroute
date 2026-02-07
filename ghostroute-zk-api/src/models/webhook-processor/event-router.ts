@@ -9,12 +9,13 @@ import { DecodedParamsMap, EventType } from "./types.ts";
 
 const DEPOSIT_EVENT_FIELDS = ["commitment", "leafIndex"];
 const ACTION_EXECUTED_FIELDS = ["nullifierHash", "changeCommitment", "changeIndex"];
+const ERC20_WITHDRAWAL_FIELDS = ["nullifierHash", "changeCommitment", "changeIndex", "token", "recipient"];
 
 /**
  * Determines the event type based on decoded parameters.
  * 
  * @param decoded - The decoded parameters from the webhook
- * @returns The detected event type: 'Deposit', 'ActionExecuted', or 'Unknown'
+ * @returns The detected event type: 'Deposit', 'ActionExecuted', 'ERC20Withdrawal', or 'Unknown'
  */
 export function determineEventType(decoded: DecodedParamsMap): EventType {
   const hasDepositFields = DEPOSIT_EVENT_FIELDS.every(
@@ -23,6 +24,15 @@ export function determineEventType(decoded: DecodedParamsMap): EventType {
   const hasActionExecutedFields = ACTION_EXECUTED_FIELDS.every(
     (field) => field in decoded,
   );
+  const hasERC20WithdrawalFields = ERC20_WITHDRAWAL_FIELDS.every(
+    (field) => field in decoded,
+  );
+
+  // Check ERC20Withdrawal first - it has "token" and "recipient" fields
+  // in addition to the ActionExecuted fields, making it more specific
+  if (hasERC20WithdrawalFields) {
+    return "ERC20Withdrawal";
+  }
 
   if (hasDepositFields && hasActionExecutedFields) {
     // Both present - this is likely an ActionExecuted that includes
@@ -54,7 +64,9 @@ export function validateEventType(
   decoded: DecodedParamsMap,
   eventType: EventType,
 ): { isValid: boolean; missingFields: string[] } {
-  const requiredFields = eventType === "ActionExecuted"
+  const requiredFields = eventType === "ERC20Withdrawal"
+    ? ERC20_WITHDRAWAL_FIELDS
+    : eventType === "ActionExecuted"
     ? ACTION_EXECUTED_FIELDS
     : eventType === "Deposit"
     ? DEPOSIT_EVENT_FIELDS
@@ -104,6 +116,11 @@ export function describeEvent(
     case "ActionExecuted": {
       const changeIndex = decoded.changeIndex as number;
       return `ActionExecuted: changeIndex=${changeIndex}`;
+    }
+    case "ERC20Withdrawal": {
+      const changeIndex = decoded.changeIndex as number;
+      const token = decoded.token as string;
+      return `ERC20Withdrawal: changeIndex=${changeIndex}, token=${token}`;
     }
     default:
       return `Unknown event with ${Object.keys(decoded).length} parameters`;

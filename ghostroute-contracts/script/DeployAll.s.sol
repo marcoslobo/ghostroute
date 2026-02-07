@@ -139,6 +139,7 @@ contract DeployAll is Script {
             console.log("  -> Vault funded with 10 ETH for testing");
         }
         
+        /*
         // Step 3: Deploy PrivacyLiquidityHook (skip for local if no PoolManager)
         if (networks[chainId].poolManager != address(0)) {
             console.log("[3/3] Deploying PrivacyLiquidityHook...");
@@ -167,6 +168,7 @@ contract DeployAll is Script {
             console.log("[3/3] Skipping PrivacyLiquidityHook (no PoolManager configured)");
             hook = address(0);
         }
+        */
         
         vm.stopBroadcast();
         

@@ -80,7 +80,7 @@ export interface ListenerEventPayload {
  */
 export const CONTRACT_TO_CHAIN_MAP: Record<string, number> = {
   // Sepolia Testnet
-  '0xc0145061c0c09177df754821cc64ca67e7bf27d1': 11155111,
+  '0x3e078e8af9abaf8156beca429a1d35b9398a2208': 11155111,
 
   // Add other deployments as needed:
   // '0x...': 1, // Ethereum Mainnet

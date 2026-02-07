@@ -1,41 +1,56 @@
 export const ERC20_ABI = [
+  // balanceOf
   {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+    name: 'balanceOf',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
+  // allowance
   {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
+    name: 'allowance',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
+  // approve
   {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
+    name: 'approve',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // symbol
+  {
+    name: 'symbol',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // name
+  {
+    name: 'name',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // decimals
+  {
+    name: 'decimals',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+    stateMutability: 'view',
+    type: 'function',
   },
 ];

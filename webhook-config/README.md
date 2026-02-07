@@ -66,7 +66,7 @@ Without these two events, the GhostRoute API cannot maintain the Merkle tree sta
 
 ## Configuration Details
 
-- **Contract Address**: `0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4`
+- **Contract Address**: `0x3e078e8af9aBaf8156Beca429A1d35B9398a2208`
 - **Network**: Sepolia (Chain ID: 11155111)
 - **Webhook URL**: `https://asjoskislowbasxamnrh.supabase.co/functions/v1/webhook`
 
@@ -76,7 +76,7 @@ After registering events, test by making a deposit:
 
 ```bash
 # Using cast (Foundry)
-cast send 0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4 \
+cast send 0x3e078e8af9aBaf8156Beca429A1d35B9398a2208 \
   "deposit(bytes32,bytes32)" \
   0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
   0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321 \

@@ -223,13 +223,30 @@ export function useDeposit(): UseDepositReturn {
           setPendingDeposit({ note, resolve, reject });
 
           // Call contract - note will be saved in onSuccess callback
-          writeContract({
-            address: vaultAddress as `0x${string}`,
-            abi: PRIVACY_VAULT_ABI,
-            functionName: 'deposit',
-            args: [commitment as `0x${string}`, bufferToHex(nullifier)],
-            value: amount,
-          });
+          // Use depositERC20 for ERC20 tokens, deposit for ETH
+          const isEth = token === ETH_TOKEN_ADDRESS;
+          
+          if (isEth) {
+            writeContract({
+              address: vaultAddress as `0x${string}`,
+              abi: PRIVACY_VAULT_ABI,
+              functionName: 'deposit',
+              args: [commitment as `0x${string}`, bufferToHex(nullifier)],
+              value: amount,
+            });
+          } else {
+            writeContract({
+              address: vaultAddress as `0x${string}`,
+              abi: PRIVACY_VAULT_ABI,
+              functionName: 'depositERC20',
+              args: [
+                token as `0x${string}`,
+                amount,
+                commitment as `0x${string}`,
+                bufferToHex(nullifier),
+              ],
+            });
+          }
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Deposit failed';
           setDepositError(message);

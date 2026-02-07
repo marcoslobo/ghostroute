@@ -27,7 +27,7 @@ import { Note } from '@/types/utxo/note';
 import { getPrivacyVaultAddress } from '@/config/privacy';
 import { PRIVACY_VAULT_ABI } from '@/services/privacyVault';
 import { calculateWithdrawUTXO } from '@/utils/utxo/withdrawMath';
-import { randomSecret } from '@/utils/utxo/pedersenCommitment';
+import { randomSecret, computeActionHash } from '@/utils/utxo/pedersenCommitment';
 import { generateWithdrawProof } from '@/services/proofGenerator';
 import { getMerkleProof } from '@/services/merkleProof';
 import { useNotes } from './useNotes';
@@ -161,9 +161,9 @@ export function useWithdraw(): UseWithdrawReturn {
   );
 
   const withdraw = useCallback(
-    ({ inputNote, withdrawAmount, recipient }: WithdrawParams): Promise<WithdrawResult> => {
+    ({ inputNote, withdrawAmount, recipient, token }: WithdrawParams): Promise<WithdrawResult> => {
       return new Promise(async (resolve, reject) => {
-        console.log('[useWithdraw] 🚀 Withdraw started:', { withdrawAmount, recipient });
+        console.log('[useWithdraw] 🚀 Withdraw started:', { withdrawAmount, recipient, token });
         setWithdrawError(null);
 
         // Validate wallet connected
@@ -222,6 +222,7 @@ export function useWithdraw(): UseWithdrawReturn {
           changeCommitmentLength: (changeCommitment as string).length,
           withdrawAmount: withdrawAmount.toString(),
           recipient,
+          token,
         });
 
         // Generate ZK proof
@@ -274,32 +275,56 @@ export function useWithdraw(): UseWithdrawReturn {
         // Store for onSuccess callback
         setPendingWithdraw({ inputNote, changeNote, resolve, reject });
 
-        console.log('[useWithdraw] 📤 About to call contract:', {
-          vaultAddress,
-          functionName: 'withdraw',
-          args: {
+        // Determine if ERC20 or ETH withdrawal
+        const isERC20 = !!token;
+        
+        // Prepare args based on withdrawal type
+        if (isERC20) {
+          // Calculate actionHash for ERC20 withdrawal
+          const actionHash = await computeActionHash(recipient, withdrawAmount);
+          
+          console.log('[useWithdraw] 📤 About to call withdrawERC20:', {
+            vaultAddress,
             proof: proof.slice(0, 20) + '...',
-            proofLength: proof.length,
             root,
-            nullifierHash,
-            changeCommitment,
+            nullifierHash: nullifierHash.slice(0, 10) + '...',
+            changeCommitment: (changeCommitment as string).slice(0, 10) + '...',
+            actionHash: actionHash.slice(0, 10) + '...',
+            token,
             recipient,
-            withdrawAmount: withdrawAmount.toString(),
-          },
-          gas: '800000',
-        });
+            amount: withdrawAmount.toString(),
+            gas: '800000',
+          });
 
-        // Call contract with explicit gas limit
-        // Note: Using fixed gas limit because automatic estimation may fail
-        // when contract simulation reverts (even with valid proof)
-        // Notes will be updated in onSuccess callback
-        writeContract({
-          address: vaultAddress as `0x${string}`,
-          abi: PRIVACY_VAULT_ABI,
-          functionName: 'withdraw',
-          args: [proof, root, nullifierHash, changeCommitment as `0x${string}`, recipient, withdrawAmount],
-          gas: 800_000n, // Reasonable gas limit for withdraw with ZK proof verification
-        });
+          // Call withdrawERC20
+          writeContract({
+            address: vaultAddress as `0x${string}`,
+            abi: PRIVACY_VAULT_ABI,
+            functionName: 'withdrawERC20',
+            args: [proof, root, nullifierHash, changeCommitment as `0x${string}`, actionHash, token, recipient, withdrawAmount],
+            gas: 800_000n,
+          });
+        } else {
+          console.log('[useWithdraw] 📤 About to call withdraw:', {
+            vaultAddress,
+            proof: proof.slice(0, 20) + '...',
+            root,
+            nullifierHash: nullifierHash.slice(0, 10) + '...',
+            changeCommitment: (changeCommitment as string).slice(0, 10) + '...',
+            recipient,
+            amount: withdrawAmount.toString(),
+            gas: '800000',
+          });
+
+          // Call withdraw (ETH)
+          writeContract({
+            address: vaultAddress as `0x${string}`,
+            abi: PRIVACY_VAULT_ABI,
+            functionName: 'withdraw',
+            args: [proof, root, nullifierHash, changeCommitment as `0x${string}`, recipient, withdrawAmount],
+            gas: 800_000n,
+          });
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Withdraw failed';
         setWithdrawError(message);

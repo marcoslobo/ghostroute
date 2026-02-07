@@ -1,6 +1,6 @@
 {
   "contractAddress": "0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4",
-  "blockchainNetworkId": "YOUR_SEPOLIA_NETWORK_UUID",
+  "blockchainNetworkId": "11577bdf-751a-44f5-aa58-c680ef643ba6",
   "eventSignature": "MerkleRootUpdated(bytes32,bytes32,uint256)",
   "abiJson": "[{\"type\":\"event\",\"name\":\"MerkleRootUpdated\",\"inputs\":[{\"name\":\"oldRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"newRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"leafCount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
   "preferredChannel": 1,

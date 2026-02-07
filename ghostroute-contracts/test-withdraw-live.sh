@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Use cast to send the actual transaction and see the real error
-VAULT_ADDRESS="0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4"
+VAULT_ADDRESS="0x3e078e8af9aBaf8156Beca429A1d35B9398a2208"
 RPC_URL="https://go.getblock.io/7dd9f30b3e1c4ddba5049a8a519083ef"
 
 PROOF="0x00"

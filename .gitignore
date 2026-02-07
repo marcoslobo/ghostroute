@@ -58,3 +58,7 @@ deno/
 /.next/
 ghostroute-ui/.next/
 PR_UI_STANDARDIZATION.md
+
+# Foundry cache/broadcast at repo root (sensitive: contains RPC keys, deployer addresses)
+cache/
+broadcast/

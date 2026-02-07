@@ -1,13 +1,13 @@
 /**
  * Withdraw Form Component
  *
- * Allows users to withdraw ETH from Privacy Vault to a recipient address
+ * Allows users to withdraw ETH or ERC20 tokens from Privacy Vault to a recipient address
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
 import { useWithdraw } from '@/hooks/utxo/useWithdraw';
 import { useNotes } from '@/hooks/utxo/useNotes';
 import { Note } from '@/types/utxo/note';
@@ -16,15 +16,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Card } from '@/components/ui/Card';
+import { getTokenInfo, isETH, ETH_TOKEN_ADDRESS } from '@/config/tokens';
+import { PRIVACY_VAULT_ABI } from '@/services/privacyVault';
+import { getPrivacyVaultAddress } from '@/config/privacy';
 
 interface WithdrawFormProps {
   onComplete?: () => void;
 }
 
 export function WithdrawForm({ onComplete }: WithdrawFormProps) {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const { unspentNotes } = useNotes();
   const { withdraw, calculateWithdraw, isPending, isConfirming, isGeneratingProof, error } = useWithdraw();
+  const vaultAddress = getPrivacyVaultAddress();
 
   // Filter out notes without leafIndex (they can't be used for withdraws)
   const validNotes = unspentNotes.filter(note => note.leafIndex !== undefined);
@@ -37,6 +41,23 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
   const [success, setSuccess] = useState(false);
 
   const selectedNote = validNotes[selectedNoteIndex];
+  const chainIdNum = chainId || 11155111;
+  const tokenInfo = selectedNote ? getTokenInfo(selectedNote.token, chainIdNum) : null;
+
+  // Check if token is allowed in vault
+  const { data: isTokenAllowed } = useReadContract({
+    address: vaultAddress as `0x${string}`,
+    abi: PRIVACY_VAULT_ABI,
+    functionName: 'isTokenAllowed',
+    args: selectedNote && !isETH(selectedNote.token) ? [selectedNote.token as `0x${string}`] : undefined,
+    query: { enabled: selectedNote && !isETH(selectedNote.token) },
+  });
+
+  const formatTokenAmount = (wei: bigint): string => {
+    if (!selectedNote) return '0';
+    const decimals = tokenInfo?.decimals ?? 18;
+    return (Number(wei) / 10 ** decimals).toFixed(decimals);
+  };
 
   // Calculate preview when inputs change
   useEffect(() => {
@@ -53,7 +74,8 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
       return;
     }
 
-    const withdrawWei = BigInt(Math.floor(amount * 1e18));
+    const decimals = tokenInfo?.decimals ?? 18;
+    const withdrawWei = BigInt(Math.floor(amount * 10 ** decimals));
 
     try {
       const result = calculateWithdraw(selectedNote, withdrawWei);
@@ -65,11 +87,7 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
       setPreviewError(message);
       console.error('[WithdrawForm] Preview calculation error:', message);
     }
-  }, [selectedNote, withdrawAmount, calculateWithdraw]);
-
-  const formatETH = (wei: bigint): string => {
-    return (Number(wei) / 1e18).toFixed(6);
-  };
+  }, [selectedNote, withdrawAmount, calculateWithdraw, tokenInfo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +101,7 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
       inputNote: selectedNote,
       withdrawAmount: preview.withdrawAmount,
       recipient: recipient as `0x${string}`,
+      token: isERC20 ? selectedNote.token as `0x${string}` : undefined,
     });
 
     if (result.success) {
@@ -93,7 +112,9 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
     }
   };
 
+  const isERC20 = selectedNote && !isETH(selectedNote.token);
   const isProcessing = isPending || isConfirming || isGeneratingProof;
+  const tokenSymbol = tokenInfo?.symbol || (isERC20 ? 'Token' : 'ETH');
 
   if (!address) {
     return (
@@ -125,27 +146,41 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
           <label className="block text-sm font-medium text-foreground mb-1">Select Note</label>
           <select
             value={selectedNoteIndex}
-            onChange={(e) => setSelectedNoteIndex(Number(e.target.value))}
+            onChange={(e) => {
+              setSelectedNoteIndex(Number(e.target.value));
+              setWithdrawAmount('');
+            }}
             className="w-full px-3 py-2 rounded-lg border bg-input text-foreground border-border focus:outline-none focus:ring-2 focus:ring-ghost-cyan focus:border-ghost-cyan disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isProcessing}
           >
-            {validNotes.map((note, index) => (
-              <option key={index} value={index}>
-                {formatETH(note.value)} ETH (LeafIndex: {note.leafIndex})
-              </option>
-            ))}
+            {validNotes.map((note, index) => {
+              const info = getTokenInfo(note.token, chainIdNum);
+              const symbol = info?.symbol || (isETH(note.token) ? 'ETH' : `${note.token.slice(0, 6)}...`);
+              return (
+                <option key={index} value={index}>
+                  {formatTokenAmount(note.value)} {symbol} (LeafIndex: {note.leafIndex})
+                </option>
+              );
+            })}
           </select>
         </div>
+
+        {isERC20 && !isTokenAllowed && (
+          <Alert variant="warning">
+            <span className="text-sm">Token {tokenSymbol} is not allowed in the vault.</span>
+          </Alert>
+        )}
 
         {/* Withdraw Amount */}
         <Input
           type="number"
-          step="0.00001"
+          step={isERC20 ? "0.000001" : "0.00001"}
           min="0"
+          max={selectedNote ? formatTokenAmount(selectedNote.value) : undefined}
           value={withdrawAmount}
           onChange={(e) => setWithdrawAmount(e.target.value)}
           placeholder="0.5"
-          label="Withdraw Amount (ETH)"
+          label={`Withdraw Amount (${tokenSymbol})`}
           disabled={isProcessing}
         />
 
@@ -185,15 +220,17 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
             <h3 className="font-medium mb-2">Transaction Preview</h3>
             <div className="flex justify-between text-sm mb-1">
               <span>Withdraw:</span>
-              <span className="font-medium">{formatETH(preview.withdrawAmount)} ETH</span>
+              <span className="font-medium">{formatTokenAmount(preview.withdrawAmount)} {tokenSymbol}</span>
             </div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Estimated Gas:</span>
-              <span>{formatETH(preview.gasEstimate)} ETH</span>
-            </div>
+            {isERC20 && (
+              <div className="flex justify-between text-sm mb-1">
+                <span>Estimated Gas:</span>
+                <span>~0.001 ETH</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm mb-1">
               <span>Change Note:</span>
-              <span>{formatETH(preview.changeNote.value)} ETH</span>
+              <span>{formatTokenAmount(preview.changeNote.value)} {tokenSymbol}</span>
             </div>
             {preview.changeNote.value > 0n && (
               <div className="text-xs text-muted-foreground mt-2">
@@ -215,7 +252,8 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
             parseFloat(withdrawAmount) <= 0 ||
             !recipient ||
             !isAddress(recipient) ||
-            !preview
+            !preview ||
+            (isERC20 && !isTokenAllowed)
           }
           className="w-full"
         >
@@ -225,7 +263,7 @@ export function WithdrawForm({ onComplete }: WithdrawFormProps) {
             ? 'Confirm in wallet...'
             : isConfirming
             ? 'Confirming...'
-            : 'Withdraw'}
+            : `Withdraw ${tokenSymbol}`}
         </Button>
 
         {isGeneratingProof && (
