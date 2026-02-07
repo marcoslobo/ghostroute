@@ -28,7 +28,7 @@ export type DecodedParamsMap = Record<string, unknown>;
 /**
  * Supported event types in the webhook payload.
  */
-export type EventType = 'Deposit' | 'ActionExecuted' | 'Unknown';
+export type EventType = 'Deposit' | 'ActionExecuted' | 'ERC20Withdrawal' | 'Unknown';
 
 /**
  * Merkle tree update details for the processing result.

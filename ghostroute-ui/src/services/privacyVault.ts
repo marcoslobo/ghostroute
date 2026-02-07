@@ -1,7 +1,7 @@
 /**
  * Complete PrivacyVault ABI with deposit, withdraw, executeAction functions
  *
- * Contract deployed on Sepolia: 0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4
+ * Contract deployed on Sepolia: 0x3e078e8af9aBaf8156Beca429A1d35B9398a2208
  * Verifier: 0x2F669A07A17E664D2168b9CD5e8EF6AB5dcFe70d (placeholder, always returns true)
  */
 

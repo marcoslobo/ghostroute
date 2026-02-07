@@ -23,4 +23,7 @@ remappings = [
     "v4-periphery/utils/=lib/v4-periphery/src/utils/"
 ]
 
+# Allow deploy scripts to write deployment artifacts
+fs_permissions = [{ access = "read-write", path = "deployments" }]
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

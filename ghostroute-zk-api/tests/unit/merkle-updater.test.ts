@@ -53,6 +53,55 @@ Deno.test("determineEventType - Both deposit and ActionExecuted fields", () => {
   assertEquals(result, "ActionExecuted");
 });
 
+Deno.test("determineEventType - ERC20Withdrawal event", () => {
+  const decoded: DecodedParamsMap = {
+    nullifierHash: "0xabc",
+    changeCommitment: "0xdef",
+    changeIndex: 10,
+    token: "0x1234567890abcdef1234567890abcdef12345678",
+    recipient: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  };
+  
+  const result = determineEventType(decoded);
+  assertEquals(result, "ERC20Withdrawal");
+});
+
+Deno.test("determineEventType - ERC20Withdrawal takes priority over ActionExecuted", () => {
+  const decoded: DecodedParamsMap = {
+    nullifierHash: "0xabc",
+    changeCommitment: "0xdef",
+    changeIndex: 10,
+    token: "0x1234567890abcdef1234567890abcdef12345678",
+    recipient: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    // Also has ActionExecuted fields (subset of ERC20Withdrawal)
+  };
+  
+  // Should prioritize ERC20Withdrawal over ActionExecuted
+  const result = determineEventType(decoded);
+  assertEquals(result, "ERC20Withdrawal");
+});
+
+Deno.test("determineEventType - partial ERC20Withdrawal fields falls back to ActionExecuted", () => {
+  const decoded: DecodedParamsMap = {
+    nullifierHash: "0xabc",
+    changeCommitment: "0xdef",
+    changeIndex: 10,
+    token: "0x1234567890abcdef1234567890abcdef12345678",
+    // Missing "recipient" - not a full ERC20Withdrawal
+  };
+  
+  // Should fall back to ActionExecuted since ERC20Withdrawal fields are incomplete
+  const result = determineEventType(decoded);
+  assertEquals(result, "ActionExecuted");
+});
+
+Deno.test("determineEventType - empty params returns Unknown", () => {
+  const decoded: DecodedParamsMap = {};
+  
+  const result = determineEventType(decoded);
+  assertEquals(result, "Unknown");
+});
+
 function assertEquals<T>(actual: T, expected: T) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);

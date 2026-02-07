@@ -162,7 +162,7 @@ No authentication needed.
 
 ### 2. Get Merkle Root
 ```bash
-GET /functions/v1/merkle-root?chainId=11155111&vaultAddress=0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4
+GET /functions/v1/merkle-root?chainId=11155111&vaultAddress=0x3e078e8af9aBaf8156Beca429A1d35B9398a2208
 ```
 
 **Response**:
@@ -178,7 +178,7 @@ GET /functions/v1/merkle-root?chainId=11155111&vaultAddress=0xAbf1Eec57F6A8961af
 
 ### 3. Get Merkle Path
 ```bash
-GET /functions/v1/merkle-path?chainId=11155111&vaultAddress=0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4&leafIndex=0
+GET /functions/v1/merkle-path?chainId=11155111&vaultAddress=0x3e078e8af9aBaf8156Beca429A1d35B9398a2208&leafIndex=0
 ```
 
 **Response**:
@@ -229,7 +229,7 @@ import { getMerkleRoot } from '@/services/ghostrouteApi';
 
 const root = await getMerkleRoot(
   11155111, // Sepolia
-  '0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4'
+  '0x3e078e8af9aBaf8156Beca429A1d35B9398a2208'
 );
 
 console.log('Current root:', root.root);
@@ -243,7 +243,7 @@ import { getMerklePath } from '@/services/ghostrouteApi';
 
 const path = await getMerklePath(
   11155111,
-  '0xAbf1Eec57F6A8961af7e517FF955eD7A409Cc2A4',
+  '0x3e078e8af9aBaf8156Beca429A1d35B9398a2208',
   0 // leafIndex
 );
 

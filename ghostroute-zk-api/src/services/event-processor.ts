@@ -128,7 +128,8 @@ export async function processWebhookPayload(
         break;
       }
 
-      case "ActionExecuted": {
+      case "ActionExecuted":
+      case "ERC20Withdrawal": {
         const result = await handleActionExecuted(
           decoded,
           payload.ContractAddress,

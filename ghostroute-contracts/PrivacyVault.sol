@@ -6,6 +6,8 @@ import "./interfaces/IZKVerifier.sol";
 import "./types/Deposit.sol";
 import "./libraries/BaseLib.sol";
 import "./libraries/Permit2Lib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title PrivacyVault
 /// @notice Privacy-preserving vault for ETH/ERC20 deposits with ZK proof verification
@@ -13,6 +15,7 @@ import "./libraries/Permit2Lib.sol";
 contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
     using PrivacyVaultErrors for bytes32;
     using PrivacyVaultEvents for bytes32;
+    using SafeERC20 for IERC20;
     
     // ========================================================================
     // STATE VARIABLES
@@ -23,6 +26,12 @@ contract PrivacyVault is IPrivacyVault, ReentrancyGuard {
     address private immutable owner;
     
     address private constant ETH_ADDRESS = address(0);
+    
+    /// @notice Mapping of ERC20 token addresses to their balances in the vault
+    mapping(address => uint256) public tokenBalances;
+    
+    /// @notice Mapping of allowed ERC20 token addresses
+    mapping(address => bool) public allowedTokens;
     
     /// @notice ZK Verifier contract reference
     IZKVerifier public verifier;
@@ -450,5 +459,123 @@ function withdraw(
     /// @return Owner address
     function getOwner() external view returns (address) {
         return owner;
+    }
+    
+    // ========================================================================
+    // ERC20 DEPOSIT & WITHDRAW
+    // ========================================================================
+    
+    /// @notice Deposit ERC20 tokens into the vault
+    function depositERC20(
+        address token,
+        uint256 amount,
+        bytes32 commitment,
+        bytes32 nullifier
+    ) external nonReentrant returns (uint256 leafIndex) {
+        // Non-payable function already rejects ETH, no need for msg.value check
+        if (token == address(0)) revert PrivacyVaultErrors.InvalidToken();
+        if (!allowedTokens[token]) revert PrivacyVaultErrors.TokenNotAllowed(token);
+        if (amount == 0) revert PrivacyVaultErrors.InvalidTokenAmount();
+        if (commitment == bytes32(0)) revert PrivacyVaultErrors.InvalidCommitment();
+        if (nullifiers[nullifier]) revert PrivacyVaultErrors.NullifierAlreadyUsed(nullifier);
+        if (nextLeafIndex >= 1048576) revert PrivacyVaultErrors.TreeAtCapacity();
+
+        nullifiers[nullifier] = true;
+        commitments[commitment] = true;
+        
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        tokenBalances[token] += amount;
+
+        leafIndex = nextLeafIndex;
+        nextLeafIndex++;
+
+        bytes32 oldRoot = currentRoot;
+        currentRoot = keccak256(abi.encodePacked(currentRoot, commitment));
+
+        emit PrivacyVaultEvents.Deposit(commitment, nullifier, token, amount, leafIndex, currentRoot);
+        emit PrivacyVaultEvents.MerkleRootUpdated(oldRoot, currentRoot, nextLeafIndex);
+
+        return leafIndex;
+    }
+    
+    /// @notice Withdraw ERC20 tokens using a ZK proof
+    function withdrawERC20(
+        bytes calldata proof,
+        bytes32 root,
+        bytes32 nullifierHash,
+        bytes32 changeCommitment,
+        bytes32 actionHash,
+        address token,
+        address recipient,
+        uint256 amount
+    ) external nonReentrant {
+        if (token == address(0)) revert PrivacyVaultErrors.InvalidToken();
+        if (!allowedTokens[token]) revert PrivacyVaultErrors.TokenNotAllowed(token);
+        require(amount > 0, "Invalid amount");
+        require(changeCommitment != bytes32(0), "Invalid change commitment");
+        require(!nullifiers[nullifierHash], "Nullifier already spent");
+        if (tokenBalances[token] < amount) revert PrivacyVaultErrors.InsufficientTokenBalance(token, tokenBalances[token], amount);
+        require(root == currentRoot, "Invalid Merkle root");
+
+        bytes32[] memory publicInputs = new bytes32[](5);
+        publicInputs[0] = root;
+        publicInputs[1] = nullifierHash;
+        publicInputs[2] = changeCommitment;
+        publicInputs[3] = actionHash;
+        publicInputs[4] = bytes32(amount);
+
+        require(verifier.verify(proof, publicInputs), "ZK proof verification failed");
+
+        // CEI: Effects
+        nullifiers[nullifierHash] = true;
+        commitments[changeCommitment] = true;
+        tokenBalances[token] -= amount;
+
+        uint256 changeIndex = nextLeafIndex;
+        bytes32 oldRoot = currentRoot;
+        currentRoot = keccak256(abi.encodePacked(currentRoot, changeCommitment));
+        nextLeafIndex++;
+
+        // CEI: Interactions
+        IERC20(token).safeTransfer(recipient, amount);
+
+        emit AnonymousERC20Withdrawal(nullifierHash, token, recipient, amount, changeCommitment, changeIndex);
+        emit PrivacyVaultEvents.MerkleRootUpdated(oldRoot, currentRoot, nextLeafIndex);
+    }
+    
+    // ========================================================================
+    // TOKEN MANAGEMENT
+    // ========================================================================
+    
+    event AnonymousERC20Withdrawal(
+        bytes32 indexed nullifier,
+        address indexed token,
+        address indexed recipient,
+        uint256 amount,
+        bytes32 changeCommitment,
+        uint256 changeIndex
+    );
+    
+    event TokenAllowed(address indexed token);
+    event TokenRemoved(address indexed token);
+    
+    function addAllowedToken(address token) external onlyOwner {
+        if (token == address(0)) revert PrivacyVaultErrors.InvalidToken();
+        allowedTokens[token] = true;
+        emit TokenAllowed(token);
+    }
+    
+    function removeAllowedToken(address token) external onlyOwner {
+        if (token == address(0)) revert PrivacyVaultErrors.InvalidToken();
+        allowedTokens[token] = false;
+        emit TokenRemoved(token);
+    }
+    
+    function isTokenAllowed(address token) external view returns (bool) {
+        return allowedTokens[token];
+    }
+    
+    function getTokenBalance(address token) external view returns (uint256) {
+        return tokenBalances[token];
     }
 }

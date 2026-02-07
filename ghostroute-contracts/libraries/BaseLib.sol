@@ -16,6 +16,15 @@ library PrivacyVaultErrors {
     error TreeHeightFixed();
     error MerkleProofInvalid();
     error ReentrancyDetected();
+    // ERC20 errors
+    error InvalidToken();
+    error TokenNotAllowed(address token);
+    error InsufficientTokenBalance(address token, uint256 balance, uint256 requested);
+    error ETHSentForERC20();
+    error InvalidAmount();
+    error NullifierAlreadySpent();
+    error InvalidRoot();
+    error InvalidProof();
 }
 
 /// @title PrivacyVault Events
@@ -37,6 +46,18 @@ library PrivacyVaultEvents {
         bytes32 newRoot
     );
 
+    event AnonymousERC20Withdrawal(
+        bytes32 indexed nullifier,
+        address indexed token,
+        address indexed recipient,
+        uint256 amount,
+        bytes32 changeCommitment,
+        uint256 changeIndex
+    );
+    
+    event TokenAllowed(address indexed token);
+    event TokenRemoved(address indexed token);
+    
     /// @notice Emitted when the Merkle tree root is updated
     /// @param oldRoot The previous root
     /// @param newRoot The new root
