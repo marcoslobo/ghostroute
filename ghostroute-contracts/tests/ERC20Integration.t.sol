@@ -23,15 +23,11 @@ contract ERC20IntegrationTest is Test {
     function setUp() public {
         // Deploy infrastructure
         verifier = new MockZKVerifier();
-        vault = new PrivacyVault(address(verifier));
+        vault = new PrivacyVault(address(verifier), address(0));
         
         // Deploy tokens
         usdc = new MockERC20("Mock USDC", "mUSDC", 6);
         dai = new MockERC20("Mock DAI", "mDAI", 18);
-        
-        // Allowlist tokens
-        vault.addAllowedToken(address(usdc));
-        vault.addAllowedToken(address(dai));
         
         // Fund users
         vm.deal(alice, 10 ether);
@@ -232,46 +228,5 @@ contract ERC20IntegrationTest is Test {
         console2.log("   USDC: deposited 1000, withdrew 300, remaining 700");
         console2.log("   DAI: deposited 2000, withdrew 500, remaining 1500");
         console2.log("SUCCESS!");
-    }
-    
-    /// @notice Admin removes token — existing deposits can still be withdrawn
-    function testWithdrawAfterTokenRemovedFromAllowlist() public {
-        // Deposit while token is allowed
-        vm.prank(alice);
-        vault.depositERC20(
-            address(usdc), 1000e6,
-            bytes32(uint256(1)), bytes32(uint256(10))
-        );
-        
-        bytes32 root = vault.currentRoot();
-        
-        // Admin removes token from allowlist
-        vault.removeAllowedToken(address(usdc));
-        assertFalse(vault.isTokenAllowed(address(usdc)), "Token removed");
-        
-        // Withdrawal should revert since token is no longer allowed
-        // (design decision: removed tokens cannot be withdrawn for safety)
-        bytes memory proof = hex"00";
-        bytes32 actionHash = keccak256(abi.encodePacked(recipient, address(usdc), uint256(500e6)));
-        
-        vm.expectRevert();
-        vault.withdrawERC20(
-            proof, root,
-            bytes32(uint256(100)), bytes32(uint256(200)),
-            actionHash,
-            address(usdc), recipient, 500e6
-        );
-        
-        // Re-add token to allow withdrawal
-        vault.addAllowedToken(address(usdc));
-        
-        vault.withdrawERC20(
-            proof, root,
-            bytes32(uint256(100)), bytes32(uint256(200)),
-            actionHash,
-            address(usdc), recipient, 500e6
-        );
-        
-        assertEq(usdc.balanceOf(recipient), 500e6, "Withdrawal works after re-adding token");
     }
 }

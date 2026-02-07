@@ -33,7 +33,8 @@ contract DeployPrivacyVault is Script {
 
         // Deploy PrivacyVault
         console.log("[2/2] Deploying PrivacyVault...");
-        PrivacyVault vault = new PrivacyVault(address(verifier));
+        address privacyHook = vm.envAddress("PRIVACY_HOOK_ADDRESS");
+        PrivacyVault vault = new PrivacyVault(address(verifier), privacyHook);
         console.log("  -> PrivacyVault:", address(vault));
 
         // Fund the vault with some ETH for testing (local only)

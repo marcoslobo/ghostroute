@@ -19,6 +19,55 @@ const EXECUTE_ACTION_GAS_LIMIT = 300000n;
 const RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 1000;
 
+interface UniswapParams {
+  token0: string;
+  token1: string;
+  fee: number;
+  tickSpacing: number;
+  tickLower: number;
+  tickUpper: number;
+  liquidityDelta: bigint;
+  salt: string;
+}
+
+function encodeUniswapParams(
+  pool: EnrichedPool,
+  note: Note,
+  amount: bigint,
+  tickLower: number,
+  tickUpper: number
+): `0x${string}` {
+  const investmentSide = getInvestmentSide(pool, note);
+  const liquidityDelta = investmentSide === 0 ? amount : amount;
+
+  const saltBytes = new Uint8Array(32);
+  crypto.getRandomValues(saltBytes);
+  const salt = '0x' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const params: UniswapParams = {
+    token0: pool.token0.id,
+    token1: pool.token1.id,
+    fee: pool.fee,
+    tickSpacing: pool.tickSpacing,
+    tickLower,
+    tickUpper,
+    liquidityDelta,
+    salt,
+  };
+
+  const encoded = 
+    params.token0.slice(2).padStart(40, '0') +
+    params.token1.slice(2).padStart(40, '0') +
+    params.fee.toString(16).padStart(8, '0') +
+    params.tickSpacing.toString(16).padStart(8, '0') +
+    (params.tickLower >>> 0).toString(16).padStart(8, '0') +
+    (params.tickUpper >>> 0).toString(16).padStart(8, '0') +
+    params.liquidityDelta.toString(16).padStart(32, '0') +
+    params.salt.slice(2);
+
+  return `0x${encoded}` as `0x${string}`;
+}
+
 export interface UsePoolInvestmentReturn {
   invest: (params: PoolInvestmentParams) => Promise<PoolInvestmentResult>;
   calculateInvestment: (
@@ -289,8 +338,8 @@ export function usePoolInvestment(): UsePoolInvestmentReturn {
         console.log('[usePoolInvestment] Submitting transaction...');
         setIsConfirming(true);
 
-        // Encode uniswap params (empty for MVP)
-        const uniswapParams = '0x' as `0x${string}`;
+        // Encode uniswap params
+        const uniswapParams = encodeUniswapParams(pool, inputNote, investAmount, tickLower, tickUpper);
 
         // Call executeAction
         const txHash = await writeContractAsync({

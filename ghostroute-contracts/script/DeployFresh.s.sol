@@ -18,7 +18,7 @@ contract DeployFresh is Script {
         
         // 2. Deploy PrivacyVault
         console.log("Deploying PrivacyVault...");
-        PrivacyVault vault = new PrivacyVault(address(verifier));
+        PrivacyVault vault = new PrivacyVault(address(verifier), address(0));
         console.log("  PrivacyVault:", address(vault));
         
         vm.stopBroadcast();

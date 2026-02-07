@@ -22,11 +22,8 @@ contract ERC20DepositTest is Test {
     function setUp() public {
         // Deploy contracts
         verifier = new MockZKVerifier();
-        vault = new PrivacyVault(address(verifier));
+        vault = new PrivacyVault(address(verifier), address(0));
         token = new MockERC20("Mock USDC", "mUSDC", 18);
-        
-        // Add token to allowlist
-        vault.addAllowedToken(address(token));
         
         // Mint tokens to user and approve vault
         token.mint(user, 10_000e18);
@@ -159,20 +156,6 @@ contract ERC20DepositTest is Test {
         vault.depositERC20(address(token), DEPOSIT_AMOUNT, commitment2, nullifier);
     }
     
-    function testRevertTokenNotAllowed() public {
-        MockERC20 disallowedToken = new MockERC20("Bad Token", "BAD", 18);
-        disallowedToken.mint(user, 10_000e18);
-        vm.prank(user);
-        disallowedToken.approve(address(vault), type(uint256).max);
-        
-        bytes32 commitment = bytes32(uint256(1));
-        bytes32 nullifier = bytes32(uint256(2));
-        
-        vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(PrivacyVaultErrors.TokenNotAllowed.selector, address(disallowedToken)));
-        vault.depositERC20(address(disallowedToken), DEPOSIT_AMOUNT, commitment, nullifier);
-    }
-    
     function testRevertETHSentWithERC20Deposit() public {
         // depositERC20 is non-payable, so sending ETH should revert at the EVM level
         // We can't use vm.expectRevert with a specific error for non-payable revert,
@@ -233,7 +216,6 @@ contract ERC20DepositTest is Test {
     function testMultipleDepositsWithDifferentTokens() public {
         // Deploy second token
         MockERC20 token2 = new MockERC20("Mock DAI", "mDAI", 18);
-        vault.addAllowedToken(address(token2));
         token2.mint(user, 10_000e18);
         vm.prank(user);
         token2.approve(address(vault), type(uint256).max);
@@ -284,16 +266,13 @@ contract ERC20DepositTest is Test {
     }
     
     // ========================================================================
-    // T024/T026: US4 Balance tracking & admin allowlist tests
+    // Multi-token tests (allowlist removed - any token allowed)
     // ========================================================================
     
     function testMultiTokenBalanceTracking() public {
         // Deploy tokens with different decimals
         MockERC20 usdc = new MockERC20("Mock USDC", "mUSDC", 6);
         MockERC20 dai = new MockERC20("Mock DAI", "mDAI", 18);
-        
-        vault.addAllowedToken(address(usdc));
-        vault.addAllowedToken(address(dai));
         
         usdc.mint(user, 1_000_000e6); // 1M USDC
         dai.mint(user, 1_000_000e18); // 1M DAI
@@ -309,58 +288,5 @@ contract ERC20DepositTest is Test {
         assertEq(vault.getTokenBalance(address(usdc)), 1000e6, "USDC balance");
         assertEq(vault.getTokenBalance(address(dai)), 500e18, "DAI balance");
         assertEq(vault.getTokenBalance(address(0xDEAD)), 0, "Unknown token balance should be 0");
-    }
-    
-    function testAddAllowedTokenEmitsEvent() public {
-        MockERC20 newToken = new MockERC20("New Token", "NEW", 18);
-        
-        vm.expectEmit(true, false, false, false);
-        emit PrivacyVaultEvents.TokenAllowed(address(newToken));
-        
-        vault.addAllowedToken(address(newToken));
-        assertTrue(vault.isTokenAllowed(address(newToken)), "Token should be allowed");
-    }
-    
-    function testRemoveAllowedTokenEmitsEvent() public {
-        vm.expectEmit(true, false, false, false);
-        emit PrivacyVaultEvents.TokenRemoved(address(token));
-        
-        vault.removeAllowedToken(address(token));
-        assertFalse(vault.isTokenAllowed(address(token)), "Token should not be allowed");
-    }
-    
-    function testNonOwnerCannotAddToken() public {
-        MockERC20 newToken = new MockERC20("New Token", "NEW", 18);
-        
-        vm.prank(user);
-        vm.expectRevert("Not owner");
-        vault.addAllowedToken(address(newToken));
-    }
-    
-    function testNonOwnerCannotRemoveToken() public {
-        vm.prank(user);
-        vm.expectRevert("Not owner");
-        vault.removeAllowedToken(address(token));
-    }
-    
-    function testDepositRevertsAfterTokenRemoved() public {
-        vault.removeAllowedToken(address(token));
-        
-        bytes32 commitment = bytes32(uint256(1));
-        bytes32 nullifier = bytes32(uint256(2));
-        
-        vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(PrivacyVaultErrors.TokenNotAllowed.selector, address(token)));
-        vault.depositERC20(address(token), DEPOSIT_AMOUNT, commitment, nullifier);
-    }
-    
-    function testAddAllowedTokenRevertsForZeroAddress() public {
-        vm.expectRevert(PrivacyVaultErrors.InvalidToken.selector);
-        vault.addAllowedToken(address(0));
-    }
-    
-    function testRemoveAllowedTokenRevertsForZeroAddress() public {
-        vm.expectRevert(PrivacyVaultErrors.InvalidToken.selector);
-        vault.removeAllowedToken(address(0));
     }
 }

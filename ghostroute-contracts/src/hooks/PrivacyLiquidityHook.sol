@@ -86,6 +86,9 @@ contract PrivacyLiquidityHook is BaseHook {
     /// @notice The transient storage slot for authorization (inherited from TransientStorage)
     bytes32 private constant AUTHORIZATION_SLOT = TransientStorage.AUTHORIZATION_SLOT;
     
+    /// @notice Mapping to track token balances held by this hook
+    mapping(address => uint256) public tokenBalances;
+    
     // ============ Modifiers ============
     
     /**
@@ -109,7 +112,7 @@ contract PrivacyLiquidityHook is BaseHook {
         IPoolManager _poolManager,
         address _privacyVault
     ) BaseHook(_poolManager) {
-        require(_privacyVault != address(0), "Invalid PrivacyVault address");
+        // Skip zero-address check for privacyVault to allow CREATE2 with placeholder
         PRIVACY_VAULT = _privacyVault;
     }
     
@@ -184,6 +187,9 @@ contract PrivacyLiquidityHook is BaseHook {
         // Compute action hash
         bytes32 actionHash = ActionHash.computeLiquidityActionHash(key, params, PRIVACY_VAULT);
         
+        // Set authorization in transient storage
+        TransientStorage.setAuthorization(msg.sender);
+        
         // Call PoolManager to add liquidity
         // The beforeAddLiquidity hook will validate transient storage authorization
         // Note: poolManager is inherited from BaseHook as IPoolManager immutable
@@ -201,6 +207,38 @@ contract PrivacyLiquidityHook is BaseHook {
             params.liquidityDelta,
             actionHash
         );
+    }
+    
+    /**
+     * @notice Receive tokens from PrivacyVault for liquidity addition
+     * @dev PrivacyVault should transfer tokens to this hook before calling addLiquidityWithPrivacy
+     * @param token0 The address of the first token
+     * @param amount0 The amount of the first token
+     * @param token1 The address of the second token
+     * @param amount1 The amount of the second token
+     */
+    function receiveTokensFromVault(
+        address token0,
+        uint256 amount0,
+        address token1,
+        uint256 amount1
+    ) external onlyPrivacyVault {
+        // Update internal balances for accounting
+        if (token0 != address(0)) {
+            tokenBalances[token0] += amount0;
+        }
+        if (token1 != address(0)) {
+            tokenBalances[token1] += amount1;
+        }
+    }
+    
+    /**
+     * @notice Get token balance held by this hook
+     * @param token The token address to check
+     * @return balance The token balance
+     */
+    function getTokenBalance(address token) external view returns (uint256) {
+        return tokenBalances[token];
     }
     
     /**

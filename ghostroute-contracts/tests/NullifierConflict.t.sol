@@ -12,7 +12,7 @@ contract NullifierConflictTest is Test {
 
     function setUp() public {
         verifier = new MockZKVerifier();
-        vault = new PrivacyVault(address(verifier));
+        vault = new PrivacyVault(address(verifier), address(0));
         vm.deal(address(vault), 100 ether);
         vm.deal(user, 10 ether);
     }

@@ -26,11 +26,8 @@ contract ERC20WithdrawTest is Test {
     function setUp() public {
         // Deploy contracts
         verifier = new MockZKVerifier();
-        vault = new PrivacyVault(address(verifier));
+        vault = new PrivacyVault(address(verifier), address(0));
         token = new MockERC20("Mock USDC", "mUSDC", 18);
-        
-        // Add token to allowlist
-        vault.addAllowedToken(address(token));
         
         // Mint tokens to user and approve vault
         token.mint(user, 10_000e18);

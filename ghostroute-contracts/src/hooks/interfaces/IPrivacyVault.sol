@@ -18,9 +18,12 @@ interface IPrivacyVault {
      * @param success Whether the action succeeded
      */
     event ActionExecuted(
+        bytes32 indexed nullifier,
+        bytes32 indexed changeCommitment,
         bytes32 indexed actionHash,
-        address indexed executor,
-        bool success
+        uint256 investAmount,
+        uint256 timestamp,
+        uint256 changeIndex
     );
     
     /**

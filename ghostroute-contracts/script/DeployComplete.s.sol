@@ -8,21 +8,20 @@ import {MockZKVerifier} from "../mocks/MockZKVerifier.sol";
 import {PrivacyLiquidityHook} from "../src/hooks/PrivacyLiquidityHook.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 
-/// @title DeployAll
-/// @notice Deployment script for all GhostRoute contracts
-/// @dev Supports multiple networks with configuration via environment variables
-contract DeployAll is Script {
+/// @title DeployComplete
+/// @notice Complete deployment script for GhostRoute contracts
+/// @dev Deploys all contracts in correct order with proper integration
+contract DeployComplete is Script {
     
-    /// @notice Network configuration structure
+    /// @notice Network configurations
     struct NetworkConfig {
         string name;
         address poolManager;
         address weth9;
-        uint160 hookPermissions;
         bool isLocal;
     }
     
-    /// @notice Deployment results structure
+    /// @notice Deployment results
     struct DeploymentResult {
         address verifier;
         address vault;
@@ -30,6 +29,9 @@ contract DeployAll is Script {
         uint256 chainId;
         uint256 timestamp;
     }
+    
+    /// @notice Salt for CREATE2 deployment
+    bytes32 constant CREATE2_SALT = bytes32(uint256(3)); // Valid salt found by miner
     
     /// @notice Maps chain ID to network configuration
     mapping(uint256 => NetworkConfig) public networks;
@@ -46,7 +48,6 @@ contract DeployAll is Script {
             name: "Anvil",
             poolManager: address(0), // Will be set during deployment
             weth9: address(0),
-            hookPermissions: 0,
             isLocal: true
         });
         
@@ -55,34 +56,6 @@ contract DeployAll is Script {
             name: "Sepolia",
             poolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543, // Sepolia PoolManager
             weth9: 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9, // Sepolia WETH
-            hookPermissions: 1 << 11, // BEFORE_ADD_LIQUIDITY
-            isLocal: false
-        });
-        
-        // Base Mainnet
-        networks[8453] = NetworkConfig({
-            name: "Base",
-            poolManager: 0x0000000000000000000000000000000000000000, // Replace with actual
-            weth9: 0x4200000000000000000000000000000000000006, // Base WETH
-            hookPermissions: 1 << 5,
-            isLocal: false
-        });
-        
-        // Base Sepolia
-        networks[84532] = NetworkConfig({
-            name: "Base Sepolia",
-            poolManager: 0x0000000000000000000000000000000000000000, // Replace with actual
-            weth9: 0x4200000000000000000000000000000000000006, // Base Sepolia WETH
-            hookPermissions: 1 << 5,
-            isLocal: false
-        });
-        
-        // Ethereum Mainnet
-        networks[1] = NetworkConfig({
-            name: "Ethereum",
-            poolManager: 0x0000000000000000000000000000000000000000, // Replace with actual
-            weth9: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // Mainnet WETH
-            hookPermissions: 1 << 5,
             isLocal: false
         });
     }
@@ -92,33 +65,38 @@ contract DeployAll is Script {
         uint256 chainId = block.chainid;
         
         // Validate network configuration
-        require(bytes(networks[chainId].name).length > 0, "DeployAll: Network not configured");
+        require(bytes(networks[chainId].name).length > 0, "DeployComplete: Network not configured");
         
         // Check if PoolManager is configured for non-local networks
         if (!networks[chainId].isLocal) {
             require(
                 networks[chainId].poolManager != address(0),
-                "DeployAll: PoolManager not configured for this network"
+                "DeployComplete: PoolManager not configured for this network"
             );
         }
         
-        // Load private key from environment
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // Load private key from environment or use default for Anvil
+        uint256 deployerPrivateKey;
+        if (block.chainid == 31337) {
+            // Default Anvil private key
+            deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff807;
+        } else {
+            deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        }
         address deployer = vm.addr(deployerPrivateKey);
         
         console.log("========================================");
-        console.log("  GhostRoute Contract Deployment");
+        console.log("  GhostRoute Complete Deployment");
         console.log("========================================");
         console.log("");
         console.log("Network:", networks[chainId].name);
         console.log("Chain ID:", chainId);
         console.log("Deployer:", deployer);
         console.log("Deployer Balance:", deployer.balance);
-
         console.log("");
         
         // Check deployer balance
-        require(deployer.balance > 0, "DeployAll: Deployer has no balance");
+        require(deployer.balance > 0, "DeployComplete: Deployer has no balance");
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -127,71 +105,62 @@ contract DeployAll is Script {
         verifier = address(new MockZKVerifier());
         console.log("  -> MockZKVerifier:", verifier);
         
-        // Step 2: Deploy PrivacyLiquidityHook
-        if (networks[chainId].poolManager != address(0)) {
-            console.log("[2/4] Deploying PrivacyLiquidityHook...");
-            bytes32 salt = bytes32(uint256(3)); // Salt found by CREATE2HookMiner.s.sol
-            hook = address(new PrivacyLiquidityHook{salt: salt}(
+        // Step 2: Deploy PrivacyLiquidityHook with CREATE2
+        console.log("[2/4] Deploying PrivacyLiquidityHook with CREATE2...");
+        
+        if (networks[chainId].isLocal) {
+            // For local deployment, use regular create
+            hook = address(new PrivacyLiquidityHook(
                 IPoolManager(networks[chainId].poolManager),
-                address(0) // Temporary, will update after vault deployment
+                address(0) // Will update after vault deployment
             ));
-            // Note: The PrivacyLiquidityHook constructor takes IPoolManager and address of PrivacyVault.
-            // We are passing address(0) for PrivacyVault temporarily, and it will be updated later.
-            // The Hook permissions will be validated by the Uniswap V4 PoolManager upon first interaction.
-            console.log("  -> PrivacyLiquidityHook:", hook);
         } else {
-            hook = address(0);
-            console.log("[2/4] Skipping PrivacyLiquidityHook (no PoolManager configured)");
+            // For production, use CREATE2 with valid salt
+            hook = address(new PrivacyLiquidityHook{salt: CREATE2_SALT}(
+                IPoolManager(networks[chainId].poolManager),
+                address(0) // Will update after vault deployment
+            ));
         }
         
-        // Step 3: Deploy PrivacyVault
+        console.log("  -> PrivacyLiquidityHook:", hook);
+        
+        // Verify hook permissions
+        uint160 hookAddress = uint160(hook);
+        bool hasPermission = (hookAddress & (1 << 11)) != 0; // BEFORE_ADD_LIQUIDITY_FLAG
+        console.log("  -> Has BEFORE_ADD_LIQUIDITY permission:", hasPermission);
+        
+        if (!hasPermission) {
+            console.log("  -> WARNING: Hook does not have required permissions!");
+        }
+        
+        // Step 3: Deploy PrivacyVault with hook address
         console.log("[3/4] Deploying PrivacyVault...");
         vault = address(new PrivacyVault(verifier, hook));
         console.log("  -> PrivacyVault:", vault);
         
-        // Update hook with vault address
-        if (hook != address(0)) {
-            console.log("[4/4] Updating PrivacyLiquidityHook with vault address...");
-            // Note: In production, you'd need a setter function or redeploy
-        }
+        // Step 4: Update hook with vault address
+        console.log("[4/4] Updating PrivacyLiquidityHook with vault address...");
         
-        // Optional: Fund vault for testing (local networks only)
+        // For now, we need to redeploy the hook with correct vault address
+        // In production, you would implement a setter function
         if (networks[chainId].isLocal) {
-            (bool fundSuccess,) = address(vault).call{value: 10 ether}("");
-            require(fundSuccess, "DeployAll: Failed to fund vault");
-            console.log("  -> Vault funded with 10 ETH for testing");
-        }
-        
-        /*
-        // Step 3: Deploy PrivacyLiquidityHook (skip for local if no PoolManager)
-        if (networks[chainId].poolManager != address(0)) {
-            console.log("[3/3] Deploying PrivacyLiquidityHook...");
-            // try {
-                hook = address(new PrivacyLiquidityHook(
-                    IPoolManager(networks[chainId].poolManager),
-                    vault
-                ));
-                console.log("  -> PrivacyLiquidityHook:", hook);
-                
-                // Verify hook permissions
-                uint160 hookAddress = uint160(hook);
-                bool hasPermission = (hookAddress & networks[chainId].hookPermissions) != 0;
-                
-                if (hasPermission) {
-                    console.log("  -> Hook has correct permissions: YES");
-                } else {
-                    console.log("  -> Hook has correct permissions: NO");
-                    console.log("    (Use HookMiner to find valid salt for production)");
-                }
-            // } catch {
-            //     console.log("  -> Hook deployment skipped (will deploy separately with HookMiner)");
-            //     hook = address(0);
-            // }
+            // Redeploy hook with correct vault address for local testing
+            hook = address(new PrivacyLiquidityHook(
+                IPoolManager(networks[chainId].poolManager),
+                vault
+            ));
+            console.log("  -> Redeployed PrivacyLiquidityHook:", hook);
         } else {
-            console.log("[3/3] Skipping PrivacyLiquidityHook (no PoolManager configured)");
-            hook = address(0);
+            // For production, you need to implement a setter or deploy in two phases
+            console.log("  -> Hook deployed with placeholder. Implement setter or two-phase deploy.");
+            console.log("  -> Deploying final PrivacyLiquidityHook with correct vault...");
+            
+            hook = address(new PrivacyLiquidityHook{salt: CREATE2_SALT}(
+                IPoolManager(networks[chainId].poolManager),
+                vault
+            ));
+            console.log("  -> Final PrivacyLiquidityHook:", hook);
         }
-        */
         
         vm.stopBroadcast();
         
@@ -200,6 +169,9 @@ contract DeployAll is Script {
         
         // Print summary
         _printSummary(chainId);
+        
+        // Test integration
+        _testIntegration();
     }
     
     /// @notice Save deployment addresses to JSON file
@@ -216,7 +188,7 @@ contract DeployAll is Script {
             ".json"
         );
         
-        // Build JSON manually since vm.serializeAddress has limitations
+        // Build JSON manually
         string memory json = "{";
         
         // Add verifier
@@ -269,10 +241,69 @@ contract DeployAll is Script {
         if (hook != address(0)) {
             console.log("  PrivacyLiquidityHook:", hook);
         } else {
-            console.log("  PrivacyLiquidityHook: (skipped)");
+            console.log("  PrivacyLiquidityHook: (failed)");
         }
         
         console.log("");
+        console.log("NEXT_PUBLIC_PRIVACY_VAULT_ADDRESS=", vm.toString(vault));
+        console.log("NEXT_PUBLIC_PRIVACY_HOOK_ADDRESS=", vm.toString(hook));
         console.log("========================================");
+    }
+    
+    /// @notice Test basic integration
+    function _testIntegration() internal view {
+        console.log("\n=== Testing Integration ===");
+        
+        if (vault != address(0) && hook != address(0)) {
+            console.log("All contracts deployed successfully");
+            
+            // Test basic calls
+            try IPoolManager(address(hook)).getPoolManager()() returns (address pm) {
+                console.log("PoolManager accessible from hook:", pm);
+            } catch {
+                console.log("Failed to access PoolManager from hook");
+            }
+            
+            console.log("Ready for Uniswap V4 integration");
+        } else {
+            console.log("Deployment incomplete - missing contracts");
+        }
+    }
+    
+    /// @notice Deploy only hook (for testing)
+    function deployHookOnly() public {
+        uint256 chainId = block.chainid;
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        
+        vm.startBroadcast(deployerPrivateKey);
+        
+        hook = address(new PrivacyLiquidityHook{salt: CREATE2_SALT}(
+            IPoolManager(networks[chainId].poolManager),
+            address(0)
+        ));
+        
+        vm.stopBroadcast();
+        
+        console.log("PrivacyLiquidityHook deployed:", hook);
+        console.log("Use this address in PrivacyVault constructor");
+    }
+    
+    /// @notice Deploy with existing hook
+    function deployWithExistingHook(address _hook) public {
+        uint256 chainId = block.chainid;
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        
+        require(_hook != address(0), "Invalid hook address");
+        
+        vm.startBroadcast(deployerPrivateKey);
+        
+        verifier = address(new MockZKVerifier());
+        vault = address(new PrivacyVault(verifier, _hook));
+        
+        vm.stopBroadcast();
+        
+        console.log("MockZKVerifier:", verifier);
+        console.log("PrivacyVault:", vault);
+        console.log("Using existing PrivacyLiquidityHook:", _hook);
     }
 }

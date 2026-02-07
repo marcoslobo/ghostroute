@@ -46,7 +46,7 @@ contract TestDepositWithdraw is Script {
         console.log("  -> MockZKVerifier:", verifier);
         
         console.log("[2/5] Deploying PrivacyVault...");
-        vault = payable(address(new PrivacyVault(verifier)));
+        vault = payable(address(new PrivacyVault(verifier, address(0))));
         console.log("  -> PrivacyVault:", vault);
         
         // Fund vault with ETH for withdrawals

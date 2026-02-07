@@ -13,7 +13,7 @@ contract DebugWithdrawTest is Test {
 
     function setUp() public {
         verifier = new MockZKVerifier();
-        vault = new PrivacyVault(address(verifier));
+        vault = new PrivacyVault(address(verifier), address(0));
 
         // Fund vault
         vm.deal(address(vault), 10 ether);

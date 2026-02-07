@@ -14,10 +14,10 @@ import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
  */
 contract DeployHook is Script {
     
-    /// @notice The PoolManager address (to be set for the target network)
-    address public constant POOL_MANAGER = address(0); // Set via PRIVATE_KEY or env
+    /// @notice The PoolManager address (Sepolia)
+    address public constant POOL_MANAGER = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
     
-    /// @notice The PrivacyVault address (set via environment or constructor)
+    /// @notice The PrivacyVault address (set via environment)
     address public constant PRIVACY_VAULT = 0x0000000000000000000000000000000000000000;
     
     /// @notice Hook permission flags
