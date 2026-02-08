@@ -24,6 +24,20 @@ import { PRIVACY_VAULT_ABI } from '@/services/privacyVault';
 import { computeCommitment, randomSalt } from '@/utils/utxo/commitment';
 import { useNotes } from './useNotes';
 
+// Global event for pool updates
+export const DEPOSIT_COMPLETE_EVENT = 'ghostroute_deposit_complete';
+
+// Emit deposit complete event to trigger pool refresh
+function emitDepositComplete() {
+  try {
+    const event = new CustomEvent(DEPOSIT_COMPLETE_EVENT);
+    window.dispatchEvent(event);
+    console.log('[useDeposit] 📢 Emitted DEPOSIT_COMPLETE_EVENT');
+  } catch (error) {
+    console.error('[useDeposit] Failed to emit DEPOSIT_COMPLETE_EVENT:', error);
+  }
+}
+
 export interface UseDepositReturn {
   deposit: (params: DepositParams) => Promise<DepositResult>;
   isPending: boolean;
@@ -158,6 +172,9 @@ export function useDeposit(): UseDepositReturn {
           updateNote(pendingNote.commitment, { leafIndex });
 
           console.log('[useDeposit] ✅ Captured leafIndex from Deposit event:', leafIndex);
+          
+          // Emit event to trigger pool refresh
+          emitDepositComplete();
         }
       } else {
         console.warn('[useDeposit] ⚠️  No Deposit event found in transaction logs');

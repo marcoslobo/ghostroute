@@ -18,16 +18,22 @@ export const TOKEN_REGISTRY: Record<number, Record<string, TokenInfo>> = {
       name: 'Ether',
     },
     '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238': {
-      address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+      address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238',
       symbol: 'USDC',
       decimals: 6,
       name: 'USD Coin (Sepolia)',
     },
     '0xff34b3d4aee8ddcd6f9afffb6fe49bd371b8a357': {
-      address: '0xfF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357',
+      address: '0xff34b3d4aee8ddcd6f9afffb6fe49bd371b8a357',
       symbol: 'DAI',
       decimals: 18,
       name: 'Dai Stablecoin (Sepolia)',
+    },
+    '0x7b42a2e45826ba52db3fc623145171e6a4b32566cef885187d8cf9f9a6c38980': {
+      address: '0x7b42a2e45826ba52db3fc623145171e6a4b32566cef885187d8cf9f9a6c38980',
+      symbol: 'LOBO',
+      decimals: 18,
+      name: 'Lobo Token',
     },
     ...(process.env.NEXT_PUBLIC_MOCK_USDC_ADDRESS
       ? {
@@ -72,20 +78,42 @@ export const TOKENS = {
 export type TokenSymbol = keyof typeof TOKENS;
 
 export function isETH(tokenAddress: string): boolean {
-  return tokenAddress === ETH_TOKEN_ADDRESS || tokenAddress === '0x' + '0'.repeat(40);
+  const normalized = tokenAddress.toLowerCase();
+  return normalized === ETH_TOKEN_ADDRESS.toLowerCase() || normalized === '0x' + '0'.repeat(40);
 }
 
 export function getTokenInfo(tokenAddress: string, chainId: number): TokenInfo | null {
   const chainTokens = TOKEN_REGISTRY[chainId];
   if (!chainTokens) return null;
-  return chainTokens[tokenAddress.toLowerCase()] ?? null;
+  const normalizedAddress = tokenAddress.toLowerCase();
+  const found = chainTokens[normalizedAddress];
+  
+  if (found) {
+    console.log('[tokens] Token found in registry:', { tokenAddress, normalizedAddress, symbol: found.symbol });
+    return found;
+  }
+  
+  console.log('[tokens] Token NOT in registry:', { tokenAddress, normalizedAddress });
+  return null;
 }
 
 export function getTokenSymbol(tokenAddress: string, chainId: number): string {
   if (isETH(tokenAddress)) return 'ETH';
   const info = getTokenInfo(tokenAddress, chainId);
   if (info) return info.symbol;
-  return `${tokenAddress.slice(0, 6)}...${tokenAddress.slice(-4)}`;
+  
+  // Better fallback for custom tokens
+  const prefix = tokenAddress.slice(0, 4);
+  const suffix = tokenAddress.slice(-4);
+  return `TKN${prefix}${suffix}`;
+}
+
+// Debug version with logging
+export function getTokenSymbolDebug(tokenAddress: string, chainId: number): string {
+  console.log('[tokens] getTokenSymbol called:', { tokenAddress, chainId, isETH: isETH(tokenAddress) });
+  const symbol = getTokenSymbol(tokenAddress, chainId);
+  console.log('[tokens] getTokenSymbol result:', symbol);
+  return symbol;
 }
 
 export function getTokenDecimals(tokenAddress: string, chainId: number): number {

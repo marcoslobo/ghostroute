@@ -1,15 +1,18 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import UniswapV4PoolsClient from '@/components/UniswapV4PoolsClient';
 import {
   loadSavedPools,
   fetchTokenInfo,
   fetchPoolState,
-  calculateTokenReserves,
   DEFAULT_CHAIN_ID,
   NETWORK_CONFIG,
   type SupportedChainId,
-  type PoolFromEvent
+  calculateTokenReserves,
 } from '@/lib/uniswap-v4';
 import { Address } from 'viem';
+import { DEPOSIT_COMPLETE_EVENT } from '@/hooks/utxo/useDeposit';
 
 // Define a new interface for the enriched pool data
 export interface EnrichedPool {
@@ -47,79 +50,118 @@ interface UniswapPoolsSectionProps {
   chainId?: SupportedChainId;
 }
 
-export async function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: UniswapPoolsSectionProps) {
-  let enrichedPools: EnrichedPool[] = [];
-  let error: string | null = null;
-
+export function UniswapPoolsSection({ chainId = DEFAULT_CHAIN_ID }: UniswapPoolsSectionProps) {
+  const [enrichedPools, setEnrichedPools] = useState<EnrichedPool[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
   const networkConfig = NETWORK_CONFIG[chainId];
 
-  try {
-    console.log(`[UniswapPoolsSection] Loading saved pools from ${networkConfig.name}...`);
+  const loadPools = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    let enrichedPoolsList: EnrichedPool[] = [];
 
-    // Load saved pools from config
-    const poolsFromEvents = await loadSavedPools(chainId);
+    try {
+      console.log(`[UniswapPoolsSection] Loading saved pools from ${networkConfig.name}...`);
+      
+      // Load saved pools from config
+      const poolsFromEvents = await loadSavedPools(chainId);
+      console.log(`[UniswapPoolsSection] Found ${poolsFromEvents.length} pools`);
 
-    console.log(`[UniswapPoolsSection] Found ${poolsFromEvents.length} pools`);
+      // Enrich each pool with token info and current state
+      for (const pool of poolsFromEvents) {
+        try {
+          // Fetch token info in parallel
+          const [token0Info, token1Info, poolState] = await Promise.all([
+            fetchTokenInfo(pool.currency0, chainId),
+            fetchTokenInfo(pool.currency1, chainId),
+            fetchPoolState(pool.poolId, chainId),
+          ]);
 
-    // Enrich each pool with token info and current state
-    for (const pool of poolsFromEvents) {
-      try {
-        // Fetch token info in parallel
-        const [token0Info, token1Info, poolState] = await Promise.all([
-          fetchTokenInfo(pool.currency0, chainId),
-          fetchTokenInfo(pool.currency1, chainId),
-          fetchPoolState(pool.poolId, chainId),
-        ]);
+          // Calculate token reserves from liquidity and price
+          const liquidity = poolState?.liquidity ?? BigInt(0);
+          const sqrtPriceX96 = poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96;
+          const { token0Reserve, token1Reserve } = calculateTokenReserves(liquidity, sqrtPriceX96);
 
-        // Calculate token reserves from liquidity and price
-        const liquidity = poolState?.liquidity ?? BigInt(0);
-        const sqrtPriceX96 = poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96;
-        const { token0Reserve, token1Reserve } = calculateTokenReserves(liquidity, sqrtPriceX96);
+          const enrichedPool: EnrichedPool = {
+            id: pool.poolId,
+            fullPoolId: pool.poolId,
+            fee: pool.fee,
+            feeTier: pool.fee.toString(),
+            tickSpacing: pool.tickSpacing,
+            hooks: pool.hooks,
+            token0: {
+              symbol: token0Info.symbol,
+              decimals: token0Info.decimals,
+              id: pool.currency0,
+            },
+            token1: {
+              symbol: token1Info.symbol,
+              decimals: token1Info.decimals,
+              id: pool.currency1,
+            },
+            sqrtPriceX96: poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96,
+            tick: poolState?.tick ?? pool.initialTick,
+            liquidity: poolState?.liquidity,
+            token0Reserve,
+            token1Reserve,
+            blockNumber: pool.blockNumber,
+            transactionHash: pool.transactionHash,
+            chainId,
+            totalValueLockedUSD: 'N/A',
+            totalValueLockedToken0: 'N/A',
+            totalValueLockedToken1: 'N/A',
+            volumeUSD: 'N/A',
+          };
 
-        const enrichedPool: EnrichedPool = {
-          id: pool.poolId,
-          fullPoolId: pool.poolId,
-          fee: pool.fee,
-          feeTier: pool.fee.toString(),
-          tickSpacing: pool.tickSpacing,
-          hooks: pool.hooks,
-          token0: {
-            symbol: token0Info.symbol,
-            decimals: token0Info.decimals,
-            id: pool.currency0,
-          },
-          token1: {
-            symbol: token1Info.symbol,
-            decimals: token1Info.decimals,
-            id: pool.currency1,
-          },
-          sqrtPriceX96: poolState?.sqrtPriceX96 ?? pool.initialSqrtPriceX96,
-          tick: poolState?.tick ?? pool.initialTick,
-          liquidity: poolState?.liquidity,
-          token0Reserve,
-          token1Reserve,
-          blockNumber: pool.blockNumber,
-          transactionHash: pool.transactionHash,
-          chainId,
-          // Placeholder values for TVL and volume (would need subgraph for real data)
-          totalValueLockedUSD: 'N/A',
-          totalValueLockedToken0: 'N/A',
-          totalValueLockedToken1: 'N/A',
-          volumeUSD: 'N/A',
-        };
-
-        enrichedPools.push(enrichedPool);
-      } catch (poolError: any) {
-        console.error(`[UniswapPoolsSection] Error enriching pool ${pool.poolId}:`, poolError);
+          enrichedPoolsList.push(enrichedPool);
+        } catch (poolError: any) {
+          console.error(`[UniswapPoolsSection] Error enriching pool ${pool.poolId}:`, poolError);
+        }
       }
+
+      // Sort by block number (newest first)
+      enrichedPoolsList.sort((a, b) => Number((b.blockNumber ?? BigInt(0)) - (a.blockNumber ?? BigInt(0))));
+      
+      setEnrichedPools(enrichedPoolsList);
+    } catch (err: any) {
+      console.error(`[UniswapPoolsSection] Error fetching pools:`, err);
+      setError(err.message || "Unknown error fetching pools.");
+    } finally {
+      setIsLoading(false);
     }
+  }, [chainId, networkConfig.name, refreshTrigger]);
 
-    // Sort by block number (newest first)
-    enrichedPools.sort((a, b) => Number((b.blockNumber ?? BigInt(0)) - (a.blockNumber ?? BigInt(0))));
+  // Initial load
+  useEffect(() => {
+    loadPools();
+  }, [loadPools, refreshTrigger]);
 
-  } catch (err: any) {
-    console.error(`[UniswapPoolsSection] Error fetching pools:`, err);
-    error = err.message || "Unknown error fetching pools.";
+  // Listen for deposit complete events
+  useEffect(() => {
+    const handleDepositComplete = () => {
+      console.log('[UniswapPoolsSection] 🔄 Deposit complete event detected - refreshing pools');
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener(DEPOSIT_COMPLETE_EVENT, handleDepositComplete);
+    
+    return () => {
+      window.removeEventListener(DEPOSIT_COMPLETE_EVENT, handleDepositComplete);
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-2xl p-8 border-2 border-ghost-border/50 shadow-card">
+        <div className="text-center p-8">
+          <div className="animate-spin h-8 w-8 border-b-2 border-ghost-cyan mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading pools...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
